@@ -16,6 +16,7 @@ const ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard", match: (p) => p.startsWith("/dashboard") || p.startsWith("/matriz") },
   { href: "/impacto", label: "Impacto", icon: "eco", match: (p) => p.startsWith("/impacto") },
   { href: "/registrar", label: "Registrar", icon: "edit", match: (p) => p.startsWith("/registrar") },
+  { href: "/logistica", label: "Logística", icon: "apartment", match: (p) => p.startsWith("/logistica") },
   { href: "/medidores", label: "Medidores", icon: "speed", match: (p) => p.startsWith("/medidores") },
   { href: "/configuracion", label: "Configuración", icon: "settings", match: (p) => p.startsWith("/configuracion") },
 ];

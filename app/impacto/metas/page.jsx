@@ -1,16 +1,17 @@
 import { AvisoDatos } from "@/components/ui/avisos";
 import { Metas } from "@/components/views/metas";
-import { loadEmissions, loadRecords, loadSucursales } from "@/lib/data";
+import { loadEmbarques, loadEmissions, loadRecords, loadSucursales } from "@/lib/data";
 import { mergeEmissions } from "@/lib/domain/emisiones";
 import { currentMonthKey } from "@/lib/domain/periods";
 
 export const metadata = { title: "Metas de reducción" };
 
 export default async function MetasPage() {
-  const [emissions, records, sucursales] = await Promise.all([
+  const [emissions, records, sucursales, embarques] = await Promise.all([
     loadEmissions(),
     loadRecords(),
     loadSucursales(),
+    loadEmbarques(),
   ]);
 
   return (
@@ -19,6 +20,7 @@ export default async function MetasPage() {
       <Metas
         emissions={mergeEmissions(emissions.data)}
         records={records.data}
+        embarques={embarques.data}
         sucursales={sucursales.data}
         mesActual={currentMonthKey()}
         // El año se fija en el servidor: la lista de años base llega hasta el

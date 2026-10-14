@@ -1,13 +1,15 @@
 import { AvisoDatos } from "@/components/ui/avisos";
 import { Factores } from "@/components/views/factores";
-import { loadEmissions, loadRecords, loadSucursales } from "@/lib/data";
+import { loadEmbarques, loadEmissions, loadRecords, loadSucursales } from "@/lib/data";
 import { mergeEmissions } from "@/lib/domain/emisiones";
 import { currentMonthKey } from "@/lib/domain/periods";
 
 export const metadata = { title: "Factores de emisión" };
 
 export default async function FactoresPage() {
-  const [emissions, sucursales, records] = await Promise.all([loadEmissions(), loadSucursales(), loadRecords()]);
+  const [emissions, sucursales, records, embarques] = await Promise.all([
+    loadEmissions(), loadSucursales(), loadRecords(), loadEmbarques(),
+  ]);
   const mes = currentMonthKey();
 
   return (
@@ -18,6 +20,7 @@ export default async function FactoresPage() {
         sucursales={sucursales.data}
         // Los factores que se muestran son los de los consumos registrados en cada año.
         records={records.data}
+        embarques={embarques.data}
         anioActual={mes.slice(0, 4)}
         // Mes al que se atribuye una recarga de refrigerante nueva.
         mesActual={mes}

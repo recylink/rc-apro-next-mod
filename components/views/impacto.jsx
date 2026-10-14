@@ -348,13 +348,13 @@ function ProgresoMeta({ actual, metaAbsoluta, metaRelativa, anioBase, valorBase 
   );
 }
 
-export function Impacto({ records, sucursales, emissions, mesActual }) {
+export function Impacto({ records, embarques, sucursales, emissions, mesActual }) {
   const [filtros, setFiltros] = useState(FILTROS_INICIALES);
   const [alcance, setAlcance] = useState("all");
 
   const ctx = useMemo(
-    () => ({ records, sucursales, emissions, anchor: mesActual }),
-    [records, sucursales, emissions, mesActual],
+    () => ({ records, embarques, sucursales, emissions, anchor: mesActual }),
+    [records, embarques, sucursales, emissions, mesActual],
   );
 
   const agg = useMemo(() => agregadoEmisiones(ctx, filtros), [ctx, filtros]);

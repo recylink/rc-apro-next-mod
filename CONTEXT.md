@@ -54,11 +54,11 @@ _Avoid_: activo, vehículo (como término de modelo)
 Kilogramos de refrigerante repuestos a equipos de una Sucursal en un mes, declarados por el cliente. No tiene boleta ni proveedor, y emite por GWP × kg (alcance 1, fugitiva).
 _Avoid_: consumo de refrigerante, cuarto tipo de consumo
 
-**Embarque** _(nuevo)_:
+**Embarque**:
 Un transporte de carga comprado: origen, destino, medio (barco, camión), kg y km, de donde sale el dato de actividad en ton-km. Lleva fecha (al menos mes/año) y Documento opcional. Alcance 3, categoría 4.
 _Avoid_: importación, flete, contenedor (como términos de modelo)
 
-**Ruta** _(nuevo)_:
+**Ruta**:
 Par origen–destino con su distancia en km y medio, precargado para no tipear los km en cada Embarque.
 _Avoid_: trayecto, lane
 

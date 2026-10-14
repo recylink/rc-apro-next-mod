@@ -219,7 +219,7 @@ function FilaRefrigerante({ rf, onCambiar, onQuitar }) {
 }
 
 /** Claves de factor usadas por los registros de un año, con su alcance y cuántos registros. */
-function clavesDelAnio(records, sucursales, anio, wtt) {
+function clavesDelAnio(records, sucursales, anio, wtt, embarques) {
   const porNombre = Object.fromEntries((sucursales || []).map((s) => [s.nombre, s]));
   const out = new Map();
   const sumar = (clave, alcance) => {
@@ -234,6 +234,9 @@ function clavesDelAnio(records, sucursales, anio, wtt) {
       r.type === "electricidad" ? 2 : r.type === "agua" ? 3 : r.alcance || 1,
     );
     if (wtt && r.type === "combustible") sumar(claveFactor({ ...r, type: "wtt" }), 3);
+  }
+  for (const e of embarques || []) {
+    if (String(e.date).slice(0, 4) === anio) sumar(claveFactor({ ...e, type: "embarque" }), 3);
   }
   return [...out.values()].sort((a, b) => a.alcance - b.alcance || a.clave.localeCompare(b.clave));
 }
@@ -263,17 +266,17 @@ function InterruptorWtt({ activo }) {
   );
 }
 
-export function Factores({ emissions: inicial, sucursales, records, anioActual, mesActual }) {
+export function Factores({ emissions: inicial, sucursales, records, embarques, anioActual, mesActual }) {
   const { guardarEmisiones, pending } = useGuardarEmisiones(inicial);
   const [emissions, setEmissions] = useState(inicial);
 
-  const anios = [...new Set([anioActual, ...(records || []).map((r) => String(r.date).slice(0, 4))])]
+  const anios = [...new Set([anioActual, ...[...(records || []), ...(embarques || [])].map((r) => String(r.date).slice(0, 4))])]
     .filter((a) => /^\d{4}$/.test(a))
     .sort()
     .reverse();
   const [anio, setAnio] = useState(anios[0]);
   const [sucId, setSucId] = useState(sucursales[0]?.id || null);
-  const claves = clavesDelAnio(records, sucursales, anio, inicial.wtt);
+  const claves = clavesDelAnio(records, sucursales, anio, inicial.wtt, embarques);
 
   const guardar = (siguiente, exito) => {
     setEmissions(siguiente);
