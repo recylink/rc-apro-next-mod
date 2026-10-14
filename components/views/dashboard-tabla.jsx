@@ -19,6 +19,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { useAccion } from "@/components/use-accion";
 import { attachDocumentAction, editRecordAction } from "@/app/actions/records";
+
+// Lo que identifica a un registro cuando su fila no tiene ID (ver updateRecordField).
+const huella = (r) => ({ date: r.date, sucursal: r.sucursal, cantidad: r.cantidad, subcat: r.subcat || "" });
 import { errorArchivo } from "@/lib/domain/archivos";
 import { TYPES, subcatLabel } from "@/lib/domain/catalog";
 import { fmtCLP, fmtMonth, fmtNum } from "@/lib/domain/format";
@@ -197,8 +200,12 @@ export function DashboardTabla({ registros, sucursales, estado, onEstado, mesAct
   };
 
   // Guarda una celda y ofrece deshacer volviendo a escribir el valor anterior.
-  const guardarCelda = (id, field, value, { titulo, cuerpo, anterior }) => {
-    correr(() => editRecordAction({ id, field, value }), {
+  // `esperado` es el registro tal como se ve acá: en filas sin ID el servidor lo
+  // compara con la planilla antes de escribir, por si alguien la reordenó.
+  const guardarCelda = (rec, field, value, { titulo, cuerpo, anterior }) => {
+    const id = rec.id;
+    const esperado = huella(rec);
+    correr(() => editRecordAction({ id, field, value, esperado }), {
       exito: {
         title: titulo,
         body: cuerpo,
@@ -209,7 +216,7 @@ export function DashboardTabla({ registros, sucursales, estado, onEstado, mesAct
           kind: "success",
           title: titulo,
           body: cuerpo,
-          undoAction: () => correr(() => editRecordAction({ id, field, value: anterior })),
+          undoAction: () => correr(() => editRecordAction({ id, field, value: anterior, esperado })),
         });
       },
     });
@@ -222,7 +229,7 @@ export function DashboardTabla({ registros, sucursales, estado, onEstado, mesAct
       setEditing(null);
       return;
     }
-    guardarCelda(rec.id, field, parsed, {
+    guardarCelda(rec, field, parsed, {
       titulo: field === "cantidad" ? "Cantidad actualizada" : "Costo actualizado",
       cuerpo: `${rec.sucursal} · ${TYPES[rec.type].label} · ${fmtMonth(rec.date)} · ${fmtNum(rec[field])} → ${fmtNum(parsed)}${field === "cantidad" ? " " + rec.unit : ""}`,
       anterior: rec[field],
@@ -237,7 +244,7 @@ export function DashboardTabla({ registros, sucursales, estado, onEstado, mesAct
     }
     // El mes se guarda como día 15: la fecha del Registro representa el período.
     const iso = mk + "-15";
-    guardarCelda(rec.id, "date", iso, {
+    guardarCelda(rec, "date", iso, {
       titulo: "Mes actualizado",
       cuerpo: `${rec.sucursal} · ${TYPES[rec.type].label} · ${fmtMonth(rec.date)} → ${fmtMonth(iso)}`,
       anterior: rec.date,
@@ -251,7 +258,7 @@ export function DashboardTabla({ registros, sucursales, estado, onEstado, mesAct
     }
     // La planilla guarda la etiqueta legible, no el id interno.
     const label = value ? subcatLabel(rec.type, value) : "";
-    guardarCelda(rec.id, "subcat", label, {
+    guardarCelda(rec, "subcat", label, {
       titulo: "Subcategoría actualizada",
       cuerpo: `${rec.sucursal} · ${TYPES[rec.type].label} · ${label || "—"}`,
     });
@@ -263,7 +270,7 @@ export function DashboardTabla({ registros, sucursales, estado, onEstado, mesAct
       setEditing(null);
       return;
     }
-    guardarCelda(rec.id, "provider", v, {
+    guardarCelda(rec, "provider", v, {
       titulo: "Proveedor actualizado",
       cuerpo: `${rec.sucursal} · ${TYPES[rec.type].label} · ${v || "—"}`,
     });
@@ -271,7 +278,7 @@ export function DashboardTabla({ registros, sucursales, estado, onEstado, mesAct
 
   const cambiarEstado = (rec, eliminar) => {
     setModal(null);
-    correr(() => editRecordAction({ id: rec.id, field: "estado", value: eliminar ? "Eliminada" : "Activa" }), {
+    correr(() => editRecordAction({ id: rec.id, field: "estado", value: eliminar ? "Eliminada" : "Activa", esperado: huella(rec) }), {
       exito: eliminar
         ? {
             title: "Registro eliminado",
@@ -303,6 +310,7 @@ export function DashboardTabla({ registros, sucursales, estado, onEstado, mesAct
     toast.info("Subiendo documento…", file.name);
     const fd = new FormData();
     fd.set("recordId", rec.id);
+    fd.set("esperado", JSON.stringify(huella(rec)));
     fd.set("file", file);
     correr(() => attachDocumentAction(fd), {
       exito: { title: "Documento adjuntado", body: file.name },

@@ -46,9 +46,9 @@ export async function submitUploadAction(formData) {
 }
 
 /** Edición inline de una celda del dashboard. */
-export async function editRecordAction({ id, field, value }) {
+export async function editRecordAction({ id, field, value, esperado }) {
   return run(async () => {
-    const target = await updateRecordField(id, field, value);
+    const target = await updateRecordField(id, field, value, esperado);
     revalidateTag(TAGS.records);
     return { target };
   });
@@ -58,9 +58,10 @@ export async function editRecordAction({ id, field, value }) {
 export async function attachDocumentAction(formData) {
   return run(async () => {
     const recordId = formData.get("recordId");
+    const esperado = JSON.parse(formData.get("esperado") || "null");
     const file = formData.get("file");
     if (!file || typeof file === "string") throw new Error("Falta el archivo");
-    const up = await attachDocument({ recordId, file });
+    const up = await attachDocument({ recordId, file, esperado });
     revalidateTag(TAGS.records);
     return { file: up };
   });
