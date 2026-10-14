@@ -1,0 +1,22 @@
+{
+  "name": "rc-apro-next",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Registro de Consumos — port a Next.js (App Router) para deploy en Vercel",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "node --experimental-test-module-mocks --no-warnings --import ./test/registrar.mjs --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "googleapis": "^174.0.0",
+    "next": "^16.2.12",
+    "pdfjs-dist": "^6.2.108",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "server-only": "^0.0.1",
+    "xlsx": "^0.18.5"
+  }
+}

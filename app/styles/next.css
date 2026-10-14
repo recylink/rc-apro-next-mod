@@ -1,0 +1,382 @@
+/* Estilos propios del port a Next. Complementan proto.css, no lo reemplazan.
+   En el prototipo estos hovers eran manejadores onMouseEnter/onMouseLeave que
+   escribían style.background a mano; acá son reglas CSS, que además no obligan a
+   que el componente sea de cliente. */
+
+/* Botones de navegación de mes/año en los pickers. */
+.rc-nav-btn:hover {
+  background: var(--rl-gray-50);
+}
+
+/* Celdas de las grillas de día y mes: sin hover si están deshabilitadas o
+   seleccionadas (la selección ya tiene su propio fondo). */
+.rc-grid-cell:not(:disabled):not([aria-pressed="true"]):hover {
+  background: var(--rl-gray-50);
+}
+
+/* Opciones del menú de Select. */
+.rc-option:not(:disabled)[aria-selected="false"]:hover {
+  background: var(--rl-gray-50);
+}
+
+/* Varios controles que en el prototipo eran <button> con onClick ahora son
+   links reales. Los que usan `all: unset` ya quedan sin subrayado; .prt-btn no,
+   porque define sus propios estilos sobre los del navegador. */
+a.prt-btn {
+  text-decoration: none;
+}
+
+/* ----- Aviso de instancia sin backend ----------------------------------- */
+.rc-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font: 500 13px/1.45 var(--rl-font-body);
+}
+.rc-banner.warning {
+  background: var(--rl-warning-50, #fff8e6);
+  color: var(--rl-warning-800, #7a5300);
+  border: 1px solid var(--rl-warning-200, #f5d9a0);
+}
+.rc-banner.error {
+  background: var(--rl-danger-50, #fdeceb);
+  color: var(--rl-danger-800, #7a1c17);
+  border: 1px solid var(--rl-danger-200, #f3bdb8);
+}
+
+/* ----- Placeholder de vista aún no portada ------------------------------ */
+.rc-todo {
+  border: 1px dashed var(--rl-gray-300);
+  border-radius: 12px;
+  padding: 28px;
+  color: var(--rl-gray-600);
+  font: 500 13.5px/1.6 var(--rl-font-body);
+  background: var(--rl-gray-50);
+}
+
+/* ----- Registro manual --------------------------------------------------- */
+/* El botón de adjuntar factura tenía su hover como onMouseEnter/onMouseLeave
+   escribiendo style.borderColor y style.color. */
+.rc-dashed-btn {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1.5px dashed var(--rl-gray-300);
+  border-radius: 8px;
+  color: var(--rl-gray-600);
+  font: 500 13px/1 var(--rl-font-body);
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.rc-dashed-btn:hover {
+  border-color: var(--rl-primary-300);
+  color: var(--rl-primary-900);
+}
+
+/* Numerito de orden de un consumo dentro del lote. */
+.rc-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--rl-primary-50);
+  color: var(--rl-primary-900);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 13px/1 var(--rl-font-display);
+}
+
+/* Valor destacado en las tarjetas de resumen. */
+.rc-dato {
+  font: 600 15px/1 var(--rl-font-display);
+  margin-top: 2px;
+}
+.rc-dato.strong {
+  font-weight: 700;
+}
+
+.rc-success-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--rl-success-50);
+  color: var(--rl-success-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ----- Tooltips de gráficos ---------------------------------------------- */
+/* Compartido por el gráfico de líneas y el heatmap: en el prototipo el mismo
+   bloque de estilos inline estaba repetido en los dos componentes. */
+.rc-chart-tooltip {
+  position: absolute;
+  top: 0;
+  background: var(--rl-gray-900, #111827);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font: 500 11px/1.4 var(--rl-font-body);
+  pointer-events: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  white-space: nowrap;
+  z-index: 10;
+}
+.rc-chart-tooltip-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+  opacity: 0.85;
+  text-transform: capitalize;
+}
+.rc-chart-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* ----- Dashboard: celdas de la tabla detallada -------------------------- */
+.rc-doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--rl-primary-900);
+  font: 600 12px/1 var(--rl-font-display);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--rl-primary-200);
+  background: var(--rl-primary-50);
+}
+.rc-doc-attach {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--rl-gray-300);
+  color: var(--rl-gray-600);
+  font: 500 12px/1 var(--rl-font-body);
+}
+.rc-doc-attach:hover {
+  border-color: var(--rl-primary-300);
+  color: var(--rl-primary-900);
+}
+/* Editor inline dentro de una celda. */
+.rc-cell-input {
+  width: 100%;
+  height: 44px;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0 16px;
+  font: 500 13px/1 var(--rl-font-body);
+  color: var(--rl-gray-900);
+}
+.rc-cell-input.num {
+  text-align: right;
+}
+.rc-cell-input.compact {
+  height: 32px;
+  padding: 0 8px;
+}
+
+/* ----- Dashboard --------------------------------------------------------- */
+.rc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+}
+@media (max-width: 1100px) {
+  .rc-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* El KPI que navega es un <a>: hereda el estilo de la tarjeta y pierde el
+   subrayado y el color de link. */
+a.prt-kpi {
+  text-decoration: none;
+  color: inherit;
+}
+
+.rc-tabla-aviso {
+  padding: 8px 22px;
+  background: var(--rl-warning-50);
+  border-bottom: 1px solid var(--rl-warning-100);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 12px/1.4 var(--rl-font-body);
+  color: var(--rl-warning-700);
+}
+
+.rc-tabla-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 22px;
+  border-top: 1px solid var(--rl-gray-100);
+  background: var(--rl-gray-50);
+}
+
+/* La píldora que lleva a configurar subcategorías es un link. */
+a.prt-pill {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ----- Impacto ambiental -------------------------------------------------- */
+.rc-impacto-kpis {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.rc-impacto-fila {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.rc-impacto-fila.inversa {
+  grid-template-columns: 1fr 1.4fr;
+}
+@media (max-width: 1100px) {
+  .rc-impacto-kpis,
+  .rc-impacto-fila,
+  .rc-impacto-fila.inversa {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tarjeta del total, en primario invertido. */
+.prt-kpi.rc-kpi-total {
+  background: var(--rl-primary-900);
+  color: #fff;
+}
+
+.emis-goal-label {
+  font: 700 10px/1 var(--rl-font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rl-gray-500);
+}
+.emis-goal-meta-label {
+  position: absolute;
+  white-space: nowrap;
+  font: 600 10px/1 var(--rl-font-display);
+  color: var(--rl-gray-500);
+}
+.emis-goal-aumento {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font: 600 11.5px/1.3 var(--rl-font-body);
+  color: var(--rl-error-600);
+}
+.emis-goal-nota {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: var(--rl-gray-50);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-bottom: 14px;
+}
+.emis-goal-cifras {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--rl-gray-50);
+  border-radius: 10px;
+}
+
+/* Hover de los botones-icono que en el prototipo lo hacían con
+   onMouseEnter/onMouseLeave escribiendo style.background. */
+.rc-icon-hover:hover {
+  background: var(--rl-gray-100);
+}
+
+/* ----- Subir documento ---------------------------------------------------- */
+.rc-proveedor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1100px) {
+  .rc-proveedor-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.prt-provider.rc-provider-nota {
+  cursor: default;
+  background: var(--rl-gray-50);
+  border-style: dashed;
+  border-color: var(--rl-gray-300);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.rc-link-inline {
+  color: var(--rl-primary-900);
+  font-weight: 600;
+  text-decoration: underline;
+}
+.rc-nombre-archivo {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Píldoras de resumen de la tabla de revisión. */
+.rc-resumen-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: 600 13px/1 var(--rl-font-display);
+}
+.rc-resumen-pill.success {
+  background: var(--rl-success-50);
+  border: 1px solid var(--rl-success-200);
+  color: var(--rl-success-700);
+}
+.rc-resumen-pill.warning {
+  background: var(--rl-warning-50);
+  border: 1px solid var(--rl-warning-200);
+  color: var(--rl-warning-700);
+}
+.rc-resumen-pill.error {
+  background: var(--rl-error-50);
+  border: 1px solid var(--rl-error-200);
+  color: var(--rl-error-700);
+}
+
+/* El input de archivo cubre toda la zona de captura de foto. */
+.rc-foto-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
