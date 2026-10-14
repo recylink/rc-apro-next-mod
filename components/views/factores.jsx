@@ -22,6 +22,7 @@ import { REFRIGERANTES_CATALOG, SCOPES } from "@/lib/domain/emisiones";
 import { CAT_META, sistemaDe } from "@/lib/domain/emisiones-calc";
 import { candidatos, claveFactor, describirClave, resolverFactor } from "@/lib/domain/factores";
 import { nextRefrigId } from "@/lib/domain/ids";
+import { getSubcatsFor } from "@/lib/domain/sucursales";
 
 const GWP = Object.fromEntries(REFRIGERANTES_CATALOG.map((r) => [r.id, r.gwp]));
 
@@ -57,7 +58,7 @@ function FilaFactorAnio({ clave, anio, n, alcance, factoresPorAnio }) {
           {describirClave(clave)}
         </div>
         <div className="prt-hint" style={{ fontSize: 11 }}>
-          {f ? f.fuente : "Sin factor en el catálogo para esta unidad"} · {n} registro{n === 1 ? "" : "s"}
+          {f ? f.fuente : "Sin factor en el catálogo para esta unidad"} · {n ? `${n} registro${n === 1 ? "" : "s"}` : "previsto, sin registros aún"}
           {f?.justificacion ? ` · ${f.justificacion}` : ""}
         </div>
       </div>
@@ -219,7 +220,7 @@ function FilaRefrigerante({ rf, onCambiar, onQuitar }) {
 }
 
 /** Claves de factor usadas por los registros de un año, con su alcance y cuántos registros. */
-function clavesDelAnio(records, sucursales, anio, wtt, embarques) {
+function clavesDelAnio(records, sucursales, anio, wtt, embarques, fuentes, rutas) {
   const porNombre = Object.fromEntries((sucursales || []).map((s) => [s.nombre, s]));
   const out = new Map();
   const sumar = (clave, alcance) => {
@@ -238,7 +239,39 @@ function clavesDelAnio(records, sucursales, anio, wtt, embarques) {
   for (const e of embarques || []) {
     if (String(e.date).slice(0, 4) === anio) sumar(claveFactor({ ...e, type: "embarque" }), 3);
   }
+  // Previstos: lo que la configuración dice que se va a registrar, aunque todavía no
+  // haya consumos. Así los factores se revisan antes de cargar el año.
+  for (const p of clavesPrevistas(sucursales, fuentes, rutas, wtt)) {
+    if (!out.has(p.clave)) out.set(p.clave, { ...p, n: 0 });
+  }
   return [...out.values()].sort((a, b) => a.alcance - b.alcance || a.clave.localeCompare(b.clave));
+}
+
+/** Claves que la configuración anticipa: sucursales, sus combustibles y unidades, fuentes y rutas. */
+function clavesPrevistas(sucursales, fuentes, rutas, wtt) {
+  const out = new Map();
+  const poner = (clave, alcance) => {
+    if (clave && (!out.has(clave) || out.get(clave).alcance > alcance)) out.set(clave, { clave, alcance });
+  };
+  // Clases de combustión que existen en el catálogo de fuentes (sin fuentes: fija).
+  const clases = new Map();
+  for (const f of fuentes || []) {
+    if (f.clase === "fija" || f.clase === "móvil") clases.set(f.clase, Math.min(clases.get(f.clase) ?? 3, f.alcance));
+  }
+  if (!clases.size) clases.set("fija", 1);
+
+  for (const s of sucursales || []) {
+    if (!s.activa) continue;
+    if (s.items?.electricidad?.activo) poner(claveFactor({ type: "electricidad", sistema: sistemaDe(s) }), 2);
+    if (s.items?.agua?.activo) poner(claveFactor({ type: "agua" }), 3);
+    for (const sc of getSubcatsFor(sucursales, "combustible", s.nombre)) {
+      const unit = sc.unidad || "L";
+      for (const [clase, alcance] of clases) poner(claveFactor({ type: "combustible", subcat: sc.id, clase, unit }), alcance);
+      if (wtt) poner(claveFactor({ type: "wtt", subcat: sc.id, unit }), 3);
+    }
+  }
+  for (const r of rutas || []) poner(claveFactor({ type: "embarque", medio: r.medio }), 3);
+  return [...out.values()];
 }
 
 function InterruptorWtt({ activo }) {
@@ -266,7 +299,7 @@ function InterruptorWtt({ activo }) {
   );
 }
 
-export function Factores({ emissions: inicial, sucursales, records, embarques, anioActual, mesActual }) {
+export function Factores({ emissions: inicial, sucursales, records, embarques, fuentes, rutas, anioActual, mesActual }) {
   const { guardarEmisiones, pending } = useGuardarEmisiones(inicial);
   const [emissions, setEmissions] = useState(inicial);
 
@@ -276,7 +309,7 @@ export function Factores({ emissions: inicial, sucursales, records, embarques, a
     .reverse();
   const [anio, setAnio] = useState(anios[0]);
   const [sucId, setSucId] = useState(sucursales[0]?.id || null);
-  const claves = clavesDelAnio(records, sucursales, anio, inicial.wtt, embarques);
+  const claves = clavesDelAnio(records, sucursales, anio, inicial.wtt, embarques, fuentes, rutas);
 
   const guardar = (siguiente, exito) => {
     setEmissions(siguiente);
@@ -341,14 +374,14 @@ export function Factores({ emissions: inicial, sucursales, records, embarques, a
           <div className="prt-card-head">
             <div>
               <div className="prt-h3">Factores {anio}</div>
-              <div className="prt-hint">Uno por cada consumo distinto registrado en el año</div>
+              <div className="prt-hint">Uno por cada consumo registrado o previsto según la configuración</div>
             </div>
             <Chip size="sm">{claves.length} factor{claves.length === 1 ? "" : "es"}</Chip>
           </div>
           <div style={{ padding: "6px 22px 14px" }}>
             {claves.length === 0 && (
               <div className="prt-hint" style={{ padding: "14px 0" }}>
-                No hay consumos registrados en {anio}. Los factores aparecen a medida que se registran.
+                Sin consumos ni configuración para {anio}: agrega sucursales, fuentes o rutas para ver sus factores.
               </div>
             )}
             {claves.map((c) => (
