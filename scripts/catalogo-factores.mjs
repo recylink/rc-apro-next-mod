@@ -1,15 +1,27 @@
 // Genera lib/domain/catalogo-factores.js desde la hoja "FE HC" (tabla de factores
 // de HuellaChile) de una planilla Excel.
 //
-//   node scripts/catalogo-factores.mjs "<ruta.xlsx>" "<nombre de la versión>"
+//   node scripts/catalogo-factores.mjs "<ruta.xlsx>" "<versión>" ["<DEFRA full set.xlsx>"]
 //
 // Solo lee factores: nunca fórmulas ni resultados de la planilla del cliente.
 // El archivo generado se versiona en el repo; la app no lee Excel en runtime.
+//
+// Con el set completo de DEFRA se agregan los factores que HuellaChile no trae en
+// la unidad que registra un cliente (EXTRAS_DEFRA). Cada extra copia categoría y
+// nombre de una fila HuellaChile del mismo combustible, para que se busque igual.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import XLSX from "xlsx";
 
-const [, , ruta, version] = process.argv;
+const [, , ruta, version, rutaDefra] = process.argv;
+
+// GLP en toneladas: APRO lo registra así y HuellaChile solo lo trae en L y m³.
+const EXTRAS_DEFRA = [
+  { hoja: "Fuels", fuel: "LPG", unit: "tonnes", copiaDe: ["1.1", /^Gas licuado/] },
+  { hoja: "Fuels", fuel: "LPG", unit: "tonnes", copiaDe: ["1.2", /^Gas licuado/] },
+  { hoja: "WTT- fuels", fuel: "LPG", unit: "tonnes", copiaDe: ["3.1", /^Gas licuado/] },
+];
+const UNIDADES_DEFRA = { tonnes: "t" };
 if (!ruta || !version) {
   console.error('uso: node scripts/catalogo-factores.mjs "<ruta.xlsx>" "<versión>"');
   process.exit(1);
@@ -88,8 +100,28 @@ const catalogo = filas.map((f, i) => {
   };
 });
 
+if (rutaDefra) {
+  const defra = XLSX.read(readFileSync(rutaDefra));
+  const anio = (String(rutaDefra).match(/20\d\d/) || [""])[0];
+  for (const ex of EXTRAS_DEFRA) {
+    const filasDefra = XLSX.utils.sheet_to_json(defra.Sheets[ex.hoja], { header: 1, blankrows: false });
+    // Columnas: [Activity, Fuel, Unit, kg CO2e, ...]; Activity solo viene en la primera fila del bloque.
+    const f = filasDefra.find((r) => String(r[1]).trim() === ex.fuel && String(r[2]).trim() === ex.unit);
+    if (!f || !Number.isFinite(Number(f[3]))) throw new Error(`DEFRA ${ex.hoja}: no está ${ex.fuel} en ${ex.unit}`);
+
+    const [codigo, nombre] = ex.copiaDe;
+    const base = catalogo.find((c) => c.codigo === codigo && nombre.test(c.nombre));
+    if (!base) throw new Error(`no hay fila HuellaChile ${codigo} ${nombre} para copiar`);
+    const unidad = UNIDADES_DEFRA[ex.unit];
+    const id = [codigo, slug(base.subcategoria), slug(base.nombre), unidad].join("-");
+    if (vistos.has(id)) throw new Error(`id repetido ${id}`);
+    vistos.add(id);
+    catalogo.push({ ...base, id, aux: "", unidad, factor: Number(f[3]), fuente: `DEFRA ${anio}, ${ex.hoja}` });
+  }
+}
+
 const salida = `// GENERADO por scripts/catalogo-factores.mjs — no editar a mano.
-// Fuente: hoja "FE HC" (HuellaChile), ${catalogo.length} factores.
+// Fuente: hoja "FE HC" (HuellaChile)${rutaDefra ? " + extras DEFRA" : ""}, ${catalogo.length} factores.
 // factor = kgCO₂e por unidad del dato de actividad.
 
 export const CATALOGO_VERSION = ${JSON.stringify(version)};

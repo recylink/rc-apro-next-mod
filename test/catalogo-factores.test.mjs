@@ -24,3 +24,12 @@ test("factores de WTT, flete marítimo y electricidad por año", () => {
   assert.equal(buscar("3.3", /^Barco - contenedor/, "tkm")[0].factor, 0.01612);
   assert.equal(buscar("2.1", /^Sistema Eléctrico Nacional/, "kWh", "2024").length, 1);
 });
+
+test("GLP en toneladas sale de DEFRA, para combustión fija, móvil y WTT", () => {
+  for (const codigo of ["1.1", "1.2", "3.1"]) {
+    const [f] = buscar(codigo, /^Gas licuado/, "t");
+    assert.ok(f, codigo);
+    assert.match(f.fuente, /^DEFRA 2025/);
+  }
+  assert.equal(buscar("1.2", /^Gas licuado/, "t")[0].factor, 2939.36095);
+});
