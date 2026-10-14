@@ -6,7 +6,7 @@ import { run } from "@/lib/result";
 import { deleteSucursal, upsertSucursal, writeSucursales } from "@/lib/sheets/sucursales";
 import { upsertEmissions } from "@/lib/sheets/emissions";
 import { patchEmisionesVacio, resumenPatchEmisiones } from "@/lib/domain/emisiones-patch";
-import { writeFotoNotifEmails } from "@/lib/sheets/config-store";
+import { setEleccionFactor, writeFotoNotifEmails } from "@/lib/sheets/config-store";
 import { renameSucursalInRecords } from "@/lib/sheets/records";
 
 /**
@@ -101,6 +101,18 @@ export async function saveEmissionsPatchAction(patch) {
     console.warn("[rc:emisiones] patch aplicado", JSON.stringify(escrito));
     revalidateTag(TAGS.emissions);
     return { resumen, escrito };
+  });
+}
+
+/**
+ * Factor de una clave en un año de inventario: `{ id }` (otra fila del catálogo),
+ * `{ valor, justificacion }` (valor propio) o null (volver al default).
+ */
+export async function setFactorAnioAction(anio, clave, eleccion) {
+  return run(async () => {
+    await setEleccionFactor(anio, clave, eleccion);
+    revalidateTag(TAGS.config);
+    return {};
   });
 }
 

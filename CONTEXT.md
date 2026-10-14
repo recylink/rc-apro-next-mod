@@ -38,15 +38,15 @@ _Avoid_: período de lectura (como término de modelo), ciclo
 Variante de un tipo de consumo: el combustible (diésel, gasolina 95, GLP, leña) o la calidad del agua (potable, gris, riego). Nunca codifica la Fuente de emisión: "diésel móvil" no es una subcategoría.
 _Avoid_: subtipo, categoría
 
-**Fuente de emisión** _(nuevo)_:
+**Fuente de emisión**:
 Qué quema o emite: camioneta, furgón, grúa horquilla, generador, bus de acercamiento. Viene de un catálogo editable por la empresa, donde cada fuente tiene fija su Clase de fuente y su Alcance. Quien registra solo elige la fuente; clase, alcance y factor salen de ella.
 _Avoid_: tipo de vehículo, equipo (cuando se habla del tipo y no de la unidad)
 
-**Clase de fuente** _(nuevo)_:
+**Clase de fuente**:
 Las cuatro categorías del alcance 1: combustión fija, combustión móvil, fugitiva, proceso. Determina qué fila del catálogo de factores aplica (el diésel de un generador y el de una camioneta tienen factores distintos).
 _Avoid_: estacionaria (decir "fija")
 
-**Equipo** _(nuevo)_:
+**Equipo**:
 La unidad concreta de una Fuente de emisión: una patente, "Grúa 1". Opcional; sirve para filtrar y agrupar.
 _Avoid_: activo, vehículo (como término de modelo)
 
@@ -80,17 +80,19 @@ _Avoid_: reading, marcación
 La cantidad que se multiplica por un factor: litros, kWh, kg, ton-km. Toda emisión es dato de actividad × factor de emisión.
 _Avoid_: consumo (cuando se habla en general)
 
-**Catálogo de factores** _(nuevo)_:
+**Catálogo de factores**:
 Tabla de referencia HuellaChile + DEFRA, versionada por año, con unidad y fuente citada (IPCC, CNE, DEFRA) por fila. Vive en el repo, no en la planilla. Se toman de él solo factores, nunca cálculos de clientes.
 _Avoid_: tabla de conversión
 
+**Clave de factor**:
+Qué se consumió y en qué unidad, que es lo que decide el factor: `combustible|diesel|móvil|L`, `electricidad|SEN|kWh`, `agua|m³`. La clase sale de la Fuente de emisión; el sistema eléctrico, de la Sucursal.
+_Avoid_: energético, key
+
 **Factor de emisión**:
-Coeficiente kgCO₂e por unidad de dato de actividad que la empresa elige del Catálogo para un **año de inventario** _(nuevo: antes era un único valor vigente)_. Cambiar el factor de un año no toca los otros; recalcular un año pasado es una acción explícita.
+Coeficiente kgCO₂e por unidad de dato de actividad para una Clave en un **año de inventario**. Por defecto sale del Catálogo (en electricidad, el del año o el último publicado); la empresa puede elegir para ese año otra fila del Catálogo o un valor propio con justificación. Cambiar un año no toca los otros. Se guarda en la clave `factoresPorAnio` de la hoja "Config".
 _Avoid_: factor de conversión
 
-**Factor de sucursal**:
-Override justificado del factor de empresa para una Sucursal (ej: generación diésel propia). Queda "pendiente de revisión" cuando el factor de empresa cambia después de creado el override.
-_Avoid_: factor local
+_Ya no existe el **Factor de sucursal**_ (override por sucursal): el valor propio por año lo reemplaza. Si una sucursal necesita un factor distinto (generación propia), es un sistema eléctrico o una fuente de emisión distinta, no un override.
 
 **Emisión derivada** _(nuevo)_:
 Emisión que no se captura y se calcula desde otro dato: hoy, el upstream de los combustibles (WTT), alcance 3, categoría 3, sobre todo Registro de combustible. Se activa por empresa.

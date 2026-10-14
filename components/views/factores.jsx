@@ -1,136 +1,138 @@
 "use client";
 
-// Factores de emisión. Portado de proto/factores.jsx.
+// Factores de emisión por año de inventario (DISEÑO-APRO.md, decisiones 6 y 7).
 //
-// Cada cambio guarda el objeto de emisiones completo (la hoja se reescribe
-// entera, igual que en el prototipo) y actualiza el estado local al mismo tiempo,
-// así el valor nuevo se ve sin esperar el viaje al servidor.
+// Cada consumo registrado en el año se traduce a una clave (qué se consumió y en
+// qué unidad) y la clave toma su factor del catálogo HuellaChile + DEFRA. Acá se
+// ve qué factor usa cada clave y se puede cambiar SOLO para ese año: por otra fila
+// del catálogo o por un valor propio con justificación. Los otros años no se mueven.
 //
-// Se implementa algo que el prototipo prometía y no hacía: al cambiar un factor
-// de empresa, los valores propios de las sucursales para ese mismo factor quedan
-// marcados como "pendiente de revisión". El aviso ya existía ("Factor de empresa
-// cambió — revisa tus valores personalizados"), pero nada ponía la marca en true:
-// solo se leía de la planilla y solo se podía apagar. Era un aviso que nunca
-// aparecía.
+// Los refrigerantes (recargas por sucursal) siguen en esta pantalla.
 
 import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/icons";
-import { Btn, Select } from "@/components/ui/controls";
+import { Btn, Input, Select } from "@/components/ui/controls";
 import { Card, Chip, SectionHead } from "@/components/ui/layout";
+import { useAccion } from "@/components/use-accion";
 import { useGuardarEmisiones } from "@/components/views/guardar-emisiones";
+import { setFactorAnioAction } from "@/app/actions/config";
 import { fmtTon } from "@/lib/domain/format";
-import { EMISSION_FACTOR_CATALOG, REFRIGERANTES_CATALOG, SCOPES } from "@/lib/domain/emisiones";
-import { CAT_META, esFactorPropio, factorFor, overridesPendientes } from "@/lib/domain/emisiones-calc";
+import { REFRIGERANTES_CATALOG, SCOPES } from "@/lib/domain/emisiones";
+import { CAT_META, sistemaDe } from "@/lib/domain/emisiones-calc";
+import { candidatos, claveFactor, describirClave, resolverFactor } from "@/lib/domain/factores";
 import { nextRefrigId } from "@/lib/domain/ids";
 
 const GWP = Object.fromEntries(REFRIGERANTES_CATALOG.map((r) => [r.id, r.gwp]));
 
-function EditorValor({ value, unit, onCommit, onCancel }) {
-  const [v, setV] = useState(String(value));
-  return (
-    <div className="prt-row" style={{ gap: 8 }}>
-      <div className="prt-input-wrap has-suffix" style={{ width: 150 }}>
-        <input
-          className="prt-input"
-          type="number"
-          step="0.0001"
-          autoFocus
-          value={v}
-          onChange={(e) => setV(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onCommit(parseFloat(v));
-            if (e.key === "Escape") onCancel();
-          }}
-          style={{ height: 38 }}
-        />
-        <span className="prt-suffix" style={{ fontSize: 11 }}>{unit.replace("kgCO₂e/", "/")}</span>
-      </div>
-      <button
-        className="ob-icon-btn rc-icon-hover"
-        style={{ color: "var(--rl-success-600)" }}
-        title="Guardar"
-        onClick={() => onCommit(parseFloat(v))}
-      >
-        <Icon name="check" size={16} />
-      </button>
-      <button className="ob-icon-btn rc-icon-hover" title="Cancelar" onClick={onCancel}>
-        <Icon name="close" size={16} />
-      </button>
-    </div>
-  );
-}
+const ORIGEN = {
+  catalogo: <Chip size="sm" icon="link">Catálogo</Chip>,
+  elegido: <Chip kind="info" size="sm" icon="edit">Elegido para este año</Chip>,
+  propio: <Chip kind="info" size="sm" icon="edit">Valor propio</Chip>,
+};
 
-function FilaFactor({ keyName, fdef, nivel, sucId, emissions, onEmpresa, onOverride, onReset }) {
-  const [editando, setEditando] = useState(false);
+function FilaFactorAnio({ clave, anio, n, alcance, factoresPorAnio }) {
+  const { correr, pending } = useAccion();
+  const [propio, setPropio] = useState(null); // { valor, justificacion } mientras se edita
+  const f = resolverFactor(clave, anio, factoresPorAnio);
+  const opciones = candidatos(clave, anio);
 
-  const valorEmpresa = emissions.factoresEmpresa[keyName].value;
-  const propio = nivel === "suc" && esFactorPropio(emissions, sucId, keyName);
-  const pendiente = propio && emissions.factoresSucursal[sucId][keyName].pendingReview;
-  const valor = nivel === "empresa" ? valorEmpresa : factorFor(emissions, sucId, keyName);
+  const guardar = (eleccion, title) =>
+    correr(() => setFactorAnioAction(anio, clave, eleccion), {
+      exito: { title, body: `${describirClave(clave)} · ${anio}` },
+      onExito: () => setPropio(null),
+    });
 
-  const commit = (val) => {
-    setEditando(false);
-    if (isNaN(val)) return;
-    if (nivel === "empresa") onEmpresa(keyName, val);
-    else onOverride(sucId, keyName, val);
-  };
+  const elegir = (id) =>
+    // Elegir el default del catálogo es lo mismo que no elegir: se borra la elección.
+    guardar(id === opciones[0]?.id ? null : { id }, "Factor actualizado");
 
   return (
-    <div className={"emis-factor-row" + (pendiente ? " pending" : "")}>
-      <span
-        className="emis-factor-scope"
-        style={{ background: SCOPES[fdef.scope].bg, color: SCOPES[fdef.scope].color }}
-      >
-        A{fdef.scope}
+    <div className="emis-factor-row" style={{ flexWrap: "wrap", rowGap: 10 }}>
+      <span className="emis-factor-scope" style={{ background: SCOPES[alcance].bg, color: SCOPES[alcance].color }}>
+        A{alcance}
       </span>
       <div className="emis-factor-name">
         <div style={{ font: "600 14px/1.2 var(--rl-font-display)", color: "var(--rl-gray-900)" }}>
-          {fdef.label}
+          {describirClave(clave)}
         </div>
-        <div className="prt-hint" style={{ fontSize: 11 }}>{fdef.fuente}</div>
+        <div className="prt-hint" style={{ fontSize: 11 }}>
+          {f ? f.fuente : "Sin factor en el catálogo para esta unidad"} · {n} registro{n === 1 ? "" : "s"}
+          {f?.justificacion ? ` · ${f.justificacion}` : ""}
+        </div>
       </div>
 
-      {nivel === "suc" &&
-        (propio ? (
-          <Chip kind="info" size="sm" icon="edit">Personalizado</Chip>
-        ) : (
-          <Chip size="sm" icon="link">Heredado de empresa</Chip>
-        ))}
+      {f && ORIGEN[f.origen]}
+      {f?.anioFactor && f.anioFactor !== Number(anio) && (
+        <Chip kind="warning" size="sm" icon="info">Factor {f.anioFactor}: último publicado</Chip>
+      )}
 
       <div className="emis-factor-value">
-        {editando ? (
-          <EditorValor value={valor} unit={fdef.unit} onCommit={commit} onCancel={() => setEditando(false)} />
-        ) : (
-          <>
-            <span style={{ font: "700 15px/1 var(--rl-font-display)", color: "var(--rl-gray-900)" }}>
-              {valor}
-            </span>
-            <span className="prt-hint" style={{ fontSize: 11 }}>{fdef.unit}</span>
-          </>
+        <span style={{ font: "700 15px/1 var(--rl-font-display)", color: f ? "var(--rl-gray-900)" : "var(--rl-warning-700)" }}>
+          {f ? f.factor.toLocaleString("es-CL", { maximumFractionDigits: 5 }) : "—"}
+        </span>
+        {f && <span className="prt-hint" style={{ fontSize: 11 }}>kgCO₂e/{f.unidad}</span>}
+      </div>
+
+      <div className="prt-row" style={{ gap: 8, width: "100%" }}>
+        {opciones.length > 1 && (
+          <Select
+            style={{ flex: 1, minWidth: 0 }}
+            value={f?.origen === "propio" ? "" : f?.id || ""}
+            onChange={elegir}
+            disabled={pending}
+            placeholder="Elegir otra fila del catálogo…"
+            options={opciones.map((o) => ({
+              value: o.id,
+              label: `${o.nombre}${o.aux ? " " + o.aux : ""} · ${o.factor.toLocaleString("es-CL", { maximumFractionDigits: 5 })} · ${o.fuente}`,
+            }))}
+          />
+        )}
+        {!propio && (
+          <Btn size="sm" kind="ghost" icon="edit" disabled={pending} onClick={() => setPropio({ valor: "", justificacion: "" })}>
+            Valor propio
+          </Btn>
+        )}
+        {f && f.origen !== "catalogo" && (
+          <Btn size="sm" kind="ghost" icon="undo" disabled={pending} onClick={() => guardar(null, "Vuelve al catálogo")}>
+            Volver al catálogo
+          </Btn>
         )}
       </div>
 
-      {!editando && (
-        <div className="prt-row" style={{ gap: 4 }}>
-          <button
-            className="ob-icon-btn rc-icon-hover"
-            style={{ color: "var(--rl-gray-500)" }}
-            title="Editar factor"
-            onClick={() => setEditando(true)}
+      {propio && (
+        <div className="prt-row" style={{ gap: 8, width: "100%" }}>
+          <div className="prt-input-wrap has-suffix" style={{ width: 170 }}>
+            <input
+              className="prt-input"
+              type="number"
+              step="0.0001"
+              min="0"
+              autoFocus
+              value={propio.valor}
+              onChange={(e) => setPropio({ ...propio, valor: e.target.value })}
+              style={{ height: 38 }}
+            />
+            <span className="prt-suffix" style={{ fontSize: 11 }}>/{String(clave).split("|").pop()}</span>
+          </div>
+          <div style={{ flex: 1 }}>
+            <Input
+              value={propio.justificacion}
+              onChange={(v) => setPropio({ ...propio, justificacion: v.slice(0, 200) })}
+              placeholder="Justificación (obligatoria): de dónde sale el valor"
+            />
+          </div>
+          <Btn
+            size="sm"
+            kind="primary"
+            disabled={pending || propio.valor === "" || !propio.justificacion.trim()}
+            onClick={() =>
+              guardar({ valor: parseFloat(propio.valor), justificacion: propio.justificacion.trim() }, "Valor propio guardado")
+            }
           >
-            <Icon name="edit" size={15} />
-          </button>
-          {propio && (
-            <button
-              className="ob-icon-btn rc-icon-hover"
-              style={{ color: "var(--rl-gray-500)" }}
-              title="Restablecer al valor de empresa"
-              onClick={() => onReset(sucId, keyName)}
-            >
-              <Icon name="undo" size={15} />
-            </button>
-          )}
+            Guardar
+          </Btn>
+          <Btn size="sm" kind="ghost" onClick={() => setPropio(null)}>Cancelar</Btn>
         </div>
       )}
     </div>
@@ -216,89 +218,36 @@ function FilaRefrigerante({ rf, onCambiar, onQuitar }) {
   );
 }
 
-const POR_ALCANCE = { 1: [], 2: [], 3: [] };
-for (const [k, def] of Object.entries(EMISSION_FACTOR_CATALOG)) POR_ALCANCE[def.scope].push(k);
+/** Claves de factor usadas por los registros de un año, con su alcance y cuántos registros. */
+function clavesDelAnio(records, sucursales, anio) {
+  const porNombre = Object.fromEntries((sucursales || []).map((s) => [s.nombre, s]));
+  const out = new Map();
+  for (const r of records || []) {
+    if (r.estado === "eliminada" || String(r.date).slice(0, 4) !== anio) continue;
+    const clave = claveFactor({ ...r, sistema: sistemaDe(porNombre[r.sucursal]) });
+    if (!clave) continue;
+    const alcance = r.type === "electricidad" ? 2 : r.type === "agua" ? 3 : r.alcance || 1;
+    const prev = out.get(clave);
+    out.set(clave, { clave, alcance: prev ? Math.min(prev.alcance, alcance) : alcance, n: (prev?.n || 0) + 1 });
+  }
+  return [...out.values()].sort((a, b) => a.alcance - b.alcance || a.clave.localeCompare(b.clave));
+}
 
-export function Factores({ emissions: inicial, sucursales, mesActual }) {
+export function Factores({ emissions: inicial, sucursales, records, anioActual, mesActual }) {
   const { guardarEmisiones, pending } = useGuardarEmisiones(inicial);
   const [emissions, setEmissions] = useState(inicial);
-  const [ambito, setAmbito] = useState("all"); // "all" = empresa
 
-  const sucId = ambito === "all" ? null : ambito;
-  const nivel = sucId ? "suc" : "empresa";
+  const anios = [...new Set([anioActual, ...(records || []).map((r) => String(r.date).slice(0, 4))])]
+    .filter((a) => /^\d{4}$/.test(a))
+    .sort()
+    .reverse();
+  const [anio, setAnio] = useState(anios[0]);
+  const [sucId, setSucId] = useState(sucursales[0]?.id || null);
+  const claves = clavesDelAnio(records, sucursales, anio);
 
   const guardar = (siguiente, exito) => {
     setEmissions(siguiente);
     guardarEmisiones(siguiente, { exito });
-  };
-
-  const setFactorEmpresa = (key, value) => {
-    const def = EMISSION_FACTOR_CATALOG[key];
-    const factoresEmpresa = {
-      ...emissions.factoresEmpresa,
-      [key]: { ...emissions.factoresEmpresa[key], value },
-    };
-    // Los valores propios de ese factor quedan para revisar: se definieron contra
-    // un valor base que ya no es el vigente.
-    const factoresSucursal = {};
-    let marcados = 0;
-    for (const [id, factores] of Object.entries(emissions.factoresSucursal)) {
-      if (!factores[key]) {
-        factoresSucursal[id] = factores;
-        continue;
-      }
-      marcados++;
-      factoresSucursal[id] = { ...factores, [key]: { ...factores[key], pendingReview: true } };
-    }
-    guardar(
-      { ...emissions, factoresEmpresa, factoresSucursal },
-      {
-        title: "Factor de empresa actualizado",
-        body:
-          `${def.label} · ${value} ${def.unit}.` +
-          (marcados > 0
-            ? ` ${marcados} valor${marcados > 1 ? "es" : ""} personalizado${marcados > 1 ? "s" : ""} quedó pendiente de revisión.`
-            : " Las sucursales que heredan se recalculan."),
-      },
-    );
-  };
-
-  const setOverride = (id, key, value) => {
-    const def = EMISSION_FACTOR_CATALOG[key];
-    guardar(
-      {
-        ...emissions,
-        factoresSucursal: {
-          ...emissions.factoresSucursal,
-          [id]: { ...(emissions.factoresSucursal[id] || {}), [key]: { value, pendingReview: false } },
-        },
-      },
-      { title: "Factor personalizado", body: `${def.label} ahora usa ${value} ${def.unit} en esta sucursal.` },
-    );
-  };
-
-  const resetOverride = (id, key) => {
-    const def = EMISSION_FACTOR_CATALOG[key];
-    const { [key]: _, ...resto } = emissions.factoresSucursal[id] || {};
-    guardar(
-      { ...emissions, factoresSucursal: { ...emissions.factoresSucursal, [id]: resto } },
-      {
-        title: "Restablecido",
-        body: `${def.label} vuelve al valor de empresa (${emissions.factoresEmpresa[key].value} ${def.unit}).`,
-      },
-    );
-  };
-
-  const marcarRevisado = (id, key) => {
-    const factores = emissions.factoresSucursal[id] || {};
-    if (!factores[key]) return;
-    guardar({
-      ...emissions,
-      factoresSucursal: {
-        ...emissions.factoresSucursal,
-        [id]: { ...factores, [key]: { ...factores[key], pendingReview: false } },
-      },
-    });
   };
 
   const cambiarRefrig = (uid, patch) => {
@@ -330,16 +279,12 @@ export function Factores({ emissions: inicial, sucursales, mesActual }) {
     });
   };
 
-  const pendientes = overridesPendientes({ sucursales, emissions }).filter(
-    (p) => sucId == null || p.sucId === sucId,
-  );
-
   return (
     <div>
       <SectionHead
         eyebrow="Impacto Ambiental / Configuración"
         title="Factores de emisión"
-        sub="Define los factores base de la empresa según la guía Huella Chile. Cada sucursal los hereda y puede personalizarlos."
+        sub="Cada consumo toma su factor del catálogo HuellaChile + DEFRA según el año. Un cambio vale solo para el año elegido."
         right={
           <Link className="prt-btn" href="/impacto">
             <Icon name="arrow_back" />
@@ -349,98 +294,40 @@ export function Factores({ emissions: inicial, sucursales, mesActual }) {
       />
 
       <div className="emis-scope-switch" style={{ marginBottom: 18 }}>
-        <button
-          className={"emis-scope-tab" + (ambito === "all" ? " active" : "")}
-          onClick={() => setAmbito("all")}
-        >
-          <Icon name="factory" size={16} /> Empresa (base)
-        </button>
-        <span className="emis-scope-sep" />
-        {sucursales.map((s) => {
-          const n = Object.keys(emissions.factoresSucursal[s.id] || {}).length;
-          return (
-            <button
-              key={s.id}
-              className={"emis-scope-tab" + (ambito === s.id ? " active" : "")}
-              onClick={() => setAmbito(s.id)}
-            >
-              {s.nombre}
-              {n > 0 && <span className="emis-scope-badge">{n}</span>}
-            </button>
-          );
-        })}
+        {anios.map((a) => (
+          <button key={a} className={"emis-scope-tab" + (a === anio ? " active" : "")} onClick={() => setAnio(a)}>
+            <Icon name="calendar_today" size={16} /> {a}
+          </button>
+        ))}
       </div>
 
-      {pendientes.length > 0 && (
-        <div className="emis-alert pending" style={{ marginBottom: 18 }}>
-          <span className="ico" style={{ background: "var(--rl-warning-100)", color: "var(--rl-warning-700)" }}>
-            <Icon name="warning" size={20} />
-          </span>
-          <div className="prt-grow">
-            <div className="ttl">Factor de empresa cambió — revisa tus valores personalizados</div>
-            <div className="sub">
-              {pendientes
-                .map((p) => `${p.label} (${p.sucNombre}): empresa ${p.empValue} · tu valor ${p.sucValue} ${p.unit}`)
-                .join(" · ")}
-            </div>
-          </div>
-          {pendientes.map((p) => (
-            <Btn
-              key={p.sucId + p.key}
-              size="sm"
-              disabled={pending}
-              onClick={() => marcarRevisado(p.sucId, p.key)}
-            >
-              Marcar revisado
-            </Btn>
-          ))}
-        </div>
-      )}
-
-      {nivel === "empresa" && (
-        <div className="emis-info-banner" style={{ marginBottom: 18 }}>
-          <Icon name="info" size={16} />
-          <span>
-            Estos valores son la <strong>configuración base</strong>. Todas las sucursales los heredan
-            salvo que definan un valor propio.
-          </span>
-        </div>
-      )}
-
       <div className="prt-stack-md" style={{ marginBottom: 18 }}>
-        {[1, 2, 3].map((s) => (
-          <Card key={s} flush>
-            <div className="prt-card-head">
-              <div className="prt-row" style={{ gap: 10 }}>
-                <span
-                  className="emis-factor-scope"
-                  style={{ background: SCOPES[s].bg, color: SCOPES[s].color }}
-                >
-                  A{s}
-                </span>
-                <div>
-                  <div className="prt-h3">{SCOPES[s].label}</div>
-                  <div className="prt-hint">{SCOPES[s].desc}</div>
-                </div>
+        <Card flush>
+          <div className="prt-card-head">
+            <div>
+              <div className="prt-h3">Factores {anio}</div>
+              <div className="prt-hint">Uno por cada consumo distinto registrado en el año</div>
+            </div>
+            <Chip size="sm">{claves.length} factor{claves.length === 1 ? "" : "es"}</Chip>
+          </div>
+          <div style={{ padding: "6px 22px 14px" }}>
+            {claves.length === 0 && (
+              <div className="prt-hint" style={{ padding: "14px 0" }}>
+                No hay consumos registrados en {anio}. Los factores aparecen a medida que se registran.
               </div>
-            </div>
-            <div style={{ padding: "6px 22px 14px" }}>
-              {POR_ALCANCE[s].map((k) => (
-                <FilaFactor
-                  key={k}
-                  keyName={k}
-                  fdef={EMISSION_FACTOR_CATALOG[k]}
-                  nivel={nivel}
-                  sucId={sucId}
-                  emissions={emissions}
-                  onEmpresa={setFactorEmpresa}
-                  onOverride={setOverride}
-                  onReset={resetOverride}
-                />
-              ))}
-            </div>
-          </Card>
-        ))}
+            )}
+            {claves.map((c) => (
+              <FilaFactorAnio
+                key={anio + c.clave}
+                clave={c.clave}
+                anio={anio}
+                n={c.n}
+                alcance={c.alcance}
+                factoresPorAnio={inicial.factoresPorAnio}
+              />
+            ))}
+          </div>
+        </Card>
 
         <Card flush>
           <div className="prt-card-head">
@@ -453,12 +340,19 @@ export function Factores({ emissions: inicial, sucursales, mesActual }) {
               </span>
               <div>
                 <div className="prt-h3">Refrigerantes</div>
-                <div className="prt-hint">Catálogo por GWP · fugas y recargas (Alcance 1)</div>
+                <div className="prt-hint">Recargas por sucursal · GWP (Alcance 1, fugitivas)</div>
               </div>
             </div>
-            <Chip size="sm">{REFRIGERANTES_CATALOG.length} tipos disponibles</Chip>
+            {sucursales.length > 1 && (
+              <Select
+                style={{ width: 220 }}
+                value={sucId || ""}
+                onChange={setSucId}
+                options={sucursales.map((s) => ({ value: s.id, label: s.nombre }))}
+              />
+            )}
           </div>
-          <div style={{ padding: "16px 22px 18px" }}>
+          <div style={{ padding: "16px 22px 18px", opacity: pending ? 0.6 : 1 }}>
             <Refrigerantes
               sucId={sucId}
               lista={sucId ? emissions.refrigerantesSucursal[sucId] || [] : []}
