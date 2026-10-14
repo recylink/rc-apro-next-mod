@@ -12,7 +12,7 @@ Los términos marcados _(nuevo)_ son el modelo acordado y todavía no están en 
 Unidad operativa que consume (planta, oficina, obra, centro de distribución), con a lo más una cuenta de servicio por tipo de servicio ante cada proveedor. Un sitio físico con dos empalmes se modela como dos Sucursales. Puede ser permanente o temporal; al cerrarse conserva su historia.
 _Avoid_: sede, sitio, local, obra (como término de modelo)
 
-**Datos de sucursal** _(nuevo)_:
+**Datos de sucursal**:
 Trabajadores y m² de una Sucursal en un año. Se capturan una vez al año y solo sirven de denominador para la Intensidad.
 _Avoid_: dotación, superficie (como términos de modelo)
 
@@ -102,7 +102,7 @@ _Avoid_: bienes y servicios (para WTT)
 Clasificación GEI de una emisión según quién controla la fuente: 1 (directas: combustión fija, móvil, fugitivas, proceso), 2 (energía comprada: electricidad, por método de ubicación), 3 (cadena de valor: 15 categorías). La electricidad se reporta solo por método de ubicación.
 _Avoid_: scope
 
-**Categoría** _(nuevo)_:
+**Categoría**:
 La subdivisión del Alcance. Cada emisión lleva dos: la del GHG Protocol (en alcance 3, del 1 al 15) y su equivalente ISO 14064-1 según HuellaChile (directas, energía importada, transporte, productos que utiliza la organización, uso de productos de la organización).
 _Avoid_: subcategoría (es otra cosa)
 
@@ -112,7 +112,7 @@ _Avoid_: indicador de relevancia
 
 ### Reporte
 
-**Límites** _(nuevo)_:
+**Límites**:
 Por año: el enfoque de control (operacional o financiero) y, por cada categoría, si está incluida, excluida o no aplica, con su justificación escrita. Una categoría excluida no aparece como faltante.
 _Avoid_: alcance (para hablar de límites), matriz de relevancia
 

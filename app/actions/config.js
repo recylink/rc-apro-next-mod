@@ -6,7 +6,9 @@ import { run } from "@/lib/result";
 import { deleteSucursal, upsertSucursal, writeSucursales } from "@/lib/sheets/sucursales";
 import { upsertEmissions } from "@/lib/sheets/emissions";
 import { patchEmisionesVacio, resumenPatchEmisiones } from "@/lib/domain/emisiones-patch";
-import { setConfigValue, setEleccionFactor, writeFotoNotifEmails } from "@/lib/sheets/config-store";
+import {
+  setConfigValue, setDatosSucursal, setEleccionFactor, setLimite, setOrganizacion, writeFotoNotifEmails,
+} from "@/lib/sheets/config-store";
 import { renameSucursalInRecords } from "@/lib/sheets/records";
 
 /**
@@ -120,6 +122,33 @@ export async function setFactorAnioAction(anio, clave, eleccion) {
 export async function setWttAction(activo) {
   return run(async () => {
     await setConfigValue("wtt", activo === true);
+    revalidateTag(TAGS.config);
+    return {};
+  });
+}
+
+/** Razón social y RUT, para el informe. */
+export async function setOrganizacionAction(org) {
+  return run(async () => {
+    await setOrganizacion(org);
+    revalidateTag(TAGS.config);
+    return {};
+  });
+}
+
+/** Trabajadores y m² de una sucursal en un año (denominadores de intensidad). */
+export async function setDatosSucursalAction(anio, sucId, datos) {
+  return run(async () => {
+    await setDatosSucursal(anio, sucId, datos);
+    revalidateTag(TAGS.config);
+    return {};
+  });
+}
+
+/** Enfoque de control o estado de una categoría en un año. */
+export async function setLimiteAction(anio, cambio) {
+  return run(async () => {
+    await setLimite(anio, cambio);
     revalidateTag(TAGS.config);
     return {};
   });

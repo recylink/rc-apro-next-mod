@@ -395,6 +395,10 @@ export function Impacto({ records, embarques, sucursales, emissions, mesActual }
               <Icon name="tune" />
               Factores
             </Link>
+            <Link className="prt-btn" href="/impacto/limites">
+              <Icon name="checklist" />
+              Límites
+            </Link>
             <Link className="prt-btn primary" href="/impacto/metas">
               <Icon name="target" />
               Metas

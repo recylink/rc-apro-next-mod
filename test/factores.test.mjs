@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { claveFactor, resolverFactor } from "../lib/domain/factores.js";
-import { emisionesPorRegistro } from "../lib/domain/emisiones-calc.js";
+import { emisionesPorCategoria, emisionesPorRegistro } from "../lib/domain/emisiones-calc.js";
 
 const dieselMovil = claveFactor({ type: "combustible", subcat: "diesel", clase: "móvil", unit: "L" });
 const sen = claveFactor({ type: "electricidad", sistema: "SEN" });
@@ -66,6 +66,22 @@ test("WTT encendido: cada combustible suma su upstream en alcance 3, categoría 
   assert.deepEqual(wtt.map((f) => [f.derivadaDe, f.scope, f.categoriaGhg]), [["c1", 3, 3], ["c2", 3, 3]]);
   assert.equal(wtt[0].tco2e.toFixed(5), "0.62409");
   assert.equal(wtt[1].factorInfo.fuente, "DEFRA 2025, WTT- fuels");
+});
+
+test("cada emisión cae en su categoría GHG", () => {
+  const r = (extra) => ({ subcat: "diesel", unit: "L", cantidad: 100, date: "2024-03-15", sucursal: "CD", estado: "activa", ...extra });
+  const cats = emisionesPorCategoria({
+    records: [
+      r({ id: "a", type: "combustible", clase: "fija", alcance: 1 }),
+      r({ id: "b", type: "combustible", clase: "móvil", alcance: 1 }),
+      r({ id: "c", type: "combustible", clase: "móvil", alcance: 3, categoriaGhg: 7 }),
+      r({ id: "d", type: "electricidad", unit: "kWh" }),
+    ],
+    sucursales: [{ id: "s1", nombre: "CD" }],
+    emissions: { factoresPorAnio: {}, wtt: true, refrigerantesSucursal: { s1: [{ tipo: "r410a", cargaKg: 1, mes: "2024-03" }] } },
+  });
+  assert.deepEqual(Object.keys(cats).sort(), ["1.fija", "1.fugitiva", "1.movil", "2.electricidad", "3.3", "3.7"]);
+  assert.equal(cats["3.3"].filas.length, 3); // WTT de los tres combustibles
 });
 
 test("sin factor en esa unidad no inventa uno", () => {
