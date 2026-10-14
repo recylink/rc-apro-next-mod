@@ -44,3 +44,12 @@ test("sin columna ID la fila se corta antes, con las columnas nuevas", () => {
   const [fila] = rowsBySheet([rec], false).Combustible;
   assert.equal(fila.length, 10);
 });
+
+test("la columna Tipo distingue gasolina de GLP", async () => {
+  const { combSubcatFromLabel } = await import(url("lib/domain/parse.js"));
+  assert.equal(combSubcatFromLabel("Gasolina"), "gasolina");
+  assert.equal(combSubcatFromLabel("Gas licuado"), "glp");
+  assert.equal(combSubcatFromLabel("GLP"), "glp");
+  assert.equal(combSubcatFromLabel("Petróleo Diésel"), "diesel");
+  assert.equal(combSubcatFromLabel("Fuel Oil"), "fuel-oil");
+});
