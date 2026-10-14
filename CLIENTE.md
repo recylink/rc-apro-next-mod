@@ -9,7 +9,7 @@ Diseño en [DISEÑO-APRO.md](DISEÑO-APRO.md).
 | Planilla | "APRO NEXT" — `1hKQSyEhx66bUhlu8_uhAO8vj4HluBo5_KxgQB7kCvTc` |
 | Carpeta raíz | "APRO" — `1PN0iPdrJ-fBRHlOo3sqSJd_WALO6jYdZ`, dentro de la unidad compartida `0ADgVGuZngcHNUk9PVA` |
 | Robot | `rcando@recylink.iam.gserviceaccount.com` (hereda acceso de la unidad) |
-| Repo | `recylink/rc-apro-next` — pendiente de crear |
+| Repo | `recylink/rc-apro-next-mod` |
 | Vercel | pendiente |
 
 ## Bitácora
