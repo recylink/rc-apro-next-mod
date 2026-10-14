@@ -33,6 +33,9 @@ const nuevoConsumo = () => ({
   type: "",
   subcat: "",
   provider: "",
+  // Solo combustible: qué fuente lo quemó (catálogo "Fuentes") y qué unidad concreta.
+  fuente: "",
+  equipo: "",
   cantidad: "",
   costo: "",
   notes: "",
@@ -41,7 +44,7 @@ const nuevoConsumo = () => ({
   providerAuto: true,
 });
 
-function validar(draft, sucursales) {
+function validar(draft, sucursales, fuentes) {
   const errors = { entries: {} };
   if (!draft.date) errors.date = "Indica el mes.";
   if (!draft.sucursal) errors.sucursal = "Elige una sucursal.";
@@ -51,6 +54,10 @@ function validar(draft, sucursales) {
     if (!e.type) ee.type = "Indica el tipo.";
     if (e.type && getSubcatsFor(sucursales, e.type, draft.sucursal).length > 0 && !e.subcat) {
       ee.subcat = "Requiere subcategoría.";
+    }
+    // Sin fuente no se sabe si el combustible es fijo o móvil, ni su alcance.
+    if (e.type === "combustible" && fuentes.length > 0 && !e.fuente) {
+      ee.fuente = "Indica la fuente de emisión.";
     }
     if (!e.cantidad) ee.cantidad = "Ingresa la cantidad.";
     else if (isNaN(parseFloat(e.cantidad)) || parseFloat(e.cantidad) <= 0) ee.cantidad = "Debe ser > 0.";
@@ -142,7 +149,7 @@ function AvisoAtipico({ anomaly, unidad, sucursal }) {
   );
 }
 
-function ConsumoCard({ entry, index, total, sucursal, sucursales, records, errors, onChange, onRemove }) {
+function ConsumoCard({ entry, index, total, sucursal, sucursales, fuentes, records, errors, onChange, onRemove }) {
   const subcatOpts = entry.type ? getSubcatsFor(sucursales, entry.type, sucursal) : [];
   const pideSubcat = entry.type && subcatOpts.length > 0;
   const unidad = entry.type ? getEntryUnit(sucursales, sucursal, entry.type, entry.subcat) : "";
@@ -202,6 +209,27 @@ function ConsumoCard({ entry, index, total, sucursal, sucursales, records, error
             </Field>
           )}
         </div>
+
+        {entry.type === "combustible" && fuentes.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Field label="Fuente de emisión" required error={ee.fuente}>
+              <Select
+                value={entry.fuente}
+                onChange={(v) => onChange({ fuente: v })}
+                options={fuentes.map((f) => ({ value: f.nombre, label: `${f.nombre} · ${f.clase}` }))}
+                placeholder="Elige una fuente…"
+                error={!!ee.fuente}
+              />
+            </Field>
+            <Field label="Equipo (opcional)" helper="Patente o identificador">
+              <Input
+                value={entry.equipo}
+                onChange={(v) => onChange({ equipo: v.toUpperCase().slice(0, 30) })}
+                placeholder="Ej. SJGF56"
+              />
+            </Field>
+          </div>
+        )}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <Field
@@ -263,7 +291,7 @@ function ConsumoCard({ entry, index, total, sucursal, sucursales, records, error
   );
 }
 
-export function ManualFlujo({ sucursales, records, mesActual }) {
+export function ManualFlujo({ sucursales, fuentes = [], records, mesActual }) {
   const router = useRouter();
   const toast = useToast();
   const [paso, setPaso] = useState(0); // 0 datos · 1 revisar · 2 listo
@@ -340,7 +368,7 @@ export function ManualFlujo({ sucursales, records, mesActual }) {
   };
 
   const revisar = () => {
-    const e = validar(draft, sucursales);
+    const e = validar(draft, sucursales, fuentes);
     setErrors(e);
     if (Object.keys(e).length === 0) setPaso(1);
   };
@@ -371,6 +399,8 @@ export function ManualFlujo({ sucursales, records, mesActual }) {
       provider: e.provider || "—",
       cantidad: parseFloat(e.cantidad),
       unit: getEntryUnit(sucursales, draft.sucursal, e.type, e.subcat),
+      fuente: e.type === "combustible" ? e.fuente : "",
+      equipo: e.type === "combustible" ? e.equipo.trim() : "",
       costo: parseFloat(e.costo) || 0,
       origen: "manual",
       estado: "activa",
@@ -506,6 +536,12 @@ export function ManualFlujo({ sucursales, records, mesActual }) {
                 </div>
                 <div className="prt-row" style={{ gap: 28, flexWrap: "wrap" }}>
                   <div><span className="prt-hint">Proveedor: </span><span>{e.provider || "—"}</span></div>
+                  {e.fuente && (
+                    <div>
+                      <span className="prt-hint">Fuente: </span>
+                      <span>{e.fuente}{e.equipo ? ` · ${e.equipo}` : ""}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="prt-hint">Costo: </span>
                     <span>{e.costo ? fmtCLP(parseFloat(e.costo)) : "—"}</span>
@@ -603,6 +639,7 @@ export function ManualFlujo({ sucursales, records, mesActual }) {
               total={draft.entries.length}
               sucursal={draft.sucursal}
               sucursales={sucursales}
+              fuentes={fuentes}
               records={records}
               errors={errors.entries?.[entry.id]}
               onChange={(patch) => cambiarConsumo(entry.id, patch)}
