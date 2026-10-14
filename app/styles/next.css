@@ -380,3 +380,12 @@ a.prt-pill {
   opacity: 0;
   cursor: pointer;
 }
+
+/* Impresión del informe de huella: solo el contenido, sin menú ni botones. */
+@media print {
+  .prt-app > :not(.prt-host-content),
+  .no-print { display: none !important; }
+  .prt-app, .prt-host-content { display: block !important; margin: 0 !important; padding: 0 !important; }
+  .informe-hoja { box-shadow: none !important; border: 0 !important; }
+  .informe-bloque { break-inside: avoid; }
+}

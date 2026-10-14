@@ -106,7 +106,7 @@ _Avoid_: scope
 La subdivisión del Alcance. Cada emisión lleva dos: la del GHG Protocol (en alcance 3, del 1 al 15) y su equivalente ISO 14064-1 según HuellaChile (directas, energía importada, transporte, productos que utiliza la organización, uso de productos de la organización).
 _Avoid_: subcategoría (es otra cosa)
 
-**Intensidad** _(nuevo)_:
+**Intensidad**:
 tCO₂e dividido por trabajadores o por m², por sucursal o empresa y por año. Se calcula, no se guarda. La pide el cliente, no la norma.
 _Avoid_: indicador de relevancia
 
@@ -120,6 +120,6 @@ _Avoid_: alcance (para hablar de límites), matriz de relevancia
 Compromiso de reducción de emisiones de la empresa o de una Sucursal: porcentaje relativo contra un año base, o tope absoluto de tCO₂e. Se mide sobre el total absoluto; el sesgo por crecimiento (abrir sucursales sube el total) es aceptado.
 _Avoid_: objetivo, target
 
-**Informe de huella** _(nuevo)_:
+**Informe de huella**:
 La salida anual: organización, totales por alcance con %, desglose categoría → fuente, intensidades, factores usados con su fuente y límites. Impacto muestra lo mismo en pantalla; impresión y Excel salen de la misma función de cálculo.
 _Avoid_: reporte de resultados, calculadora
