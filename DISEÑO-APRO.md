@@ -69,3 +69,29 @@ al upstream. La referencia y sus cinco espejos no se tocan.
 - Planilla y carpeta de APRO en la unidad compartida, env vars y deploy: seguir
   `PLAYBOOK-ESPEJO-CLIENTE.md` (y `CLIENTE.md`) cuando toque.
 - Repo vacío en GitHub `recylink/rc-apro-next`, que crea Domingo.
+
+## Estado de implementación (2026-10-14)
+
+Los siete pasos están en `main`, con pruebas (`npm test`):
+
+| Paso | Qué | Dónde |
+|------|-----|-------|
+| 1 | Catálogo de factores HuellaChile (+ GLP por tonelada de DEFRA 2025) | `scripts/catalogo-factores.mjs` → `lib/domain/catalogo-factores.js` |
+| 2 | Fuente de emisión, Equipo y Unidad en Combustible | hoja `Fuentes`; columnas L–N de `Combustible` |
+| 3 | Factor por año de inventario | `lib/domain/factores.js`; `Config.factoresPorAnio`; Impacto → Factores |
+| 4 | WTT derivado (alcance 3, cat. 3) | `Config.wtt`; interruptor en Factores |
+| 5 | Embarques y Rutas (alcance 3, cat. 4) | hojas `Embarques` y `Rutas`; pantalla Logística |
+| 6 | Organización, datos de sucursal y límites por año | `Config.organizacion/datosSucursal/limites`; Impacto → Límites |
+| 7 | Informe anual: pantalla, impresión y Excel | `lib/domain/informe.js`; `/impacto/informe` |
+
+Lo que se apartó del diseño, y por qué:
+
+- **Ya no hay factor por sucursal.** El valor propio por año lo reemplaza; un caso como
+  generación propia se modela como otro sistema eléctrico u otra fuente.
+- **Las exclusiones no se cruzan con la matriz de carga.** La matriz es por tipo de consumo
+  y una categoría GHG no se mapea uno a uno a un tipo. El informe sí las descuenta y avisa
+  si una categoría excluida tiene emisiones.
+- **Impacto (el tablero con filtros) muestra todo lo registrado; el informe, el inventario
+  declarado.** Si hay categorías excluidas con emisiones, los totales difieren y el informe
+  lo dice.
+- **El documento de un embarque es texto** (N° de BL o link), no un archivo subido.

@@ -2,7 +2,7 @@
 
 Herramienta para que APRO registre sus datos de actividad (consumos, combustible por fuente de emisión, transporte de carga) y cuantifique su huella de carbono organizacional según GHG Protocol y la homologación ISO 14064-1 de HuellaChile. Copia independiente de `registro-de-consumos-next` (desde `febd7f6`); no comparte historia ni código con la referencia ni con sus espejos. Las decisiones que llevaron aquí están en [DISEÑO-APRO.md](DISEÑO-APRO.md).
 
-Los términos marcados _(nuevo)_ son el modelo acordado y todavía no están en el código.
+Todos los términos del modelo acordado están implementados (2026-10-14).
 
 ## Language
 
