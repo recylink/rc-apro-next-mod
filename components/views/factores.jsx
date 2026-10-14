@@ -16,7 +16,7 @@ import { Btn, Input, Select } from "@/components/ui/controls";
 import { Card, Chip, SectionHead } from "@/components/ui/layout";
 import { useAccion } from "@/components/use-accion";
 import { useGuardarEmisiones } from "@/components/views/guardar-emisiones";
-import { setFactorAnioAction } from "@/app/actions/config";
+import { setFactorAnioAction, setWttAction } from "@/app/actions/config";
 import { fmtTon } from "@/lib/domain/format";
 import { REFRIGERANTES_CATALOG, SCOPES } from "@/lib/domain/emisiones";
 import { CAT_META, sistemaDe } from "@/lib/domain/emisiones-calc";
@@ -219,18 +219,48 @@ function FilaRefrigerante({ rf, onCambiar, onQuitar }) {
 }
 
 /** Claves de factor usadas por los registros de un año, con su alcance y cuántos registros. */
-function clavesDelAnio(records, sucursales, anio) {
+function clavesDelAnio(records, sucursales, anio, wtt) {
   const porNombre = Object.fromEntries((sucursales || []).map((s) => [s.nombre, s]));
   const out = new Map();
-  for (const r of records || []) {
-    if (r.estado === "eliminada" || String(r.date).slice(0, 4) !== anio) continue;
-    const clave = claveFactor({ ...r, sistema: sistemaDe(porNombre[r.sucursal]) });
-    if (!clave) continue;
-    const alcance = r.type === "electricidad" ? 2 : r.type === "agua" ? 3 : r.alcance || 1;
+  const sumar = (clave, alcance) => {
+    if (!clave) return;
     const prev = out.get(clave);
     out.set(clave, { clave, alcance: prev ? Math.min(prev.alcance, alcance) : alcance, n: (prev?.n || 0) + 1 });
+  };
+  for (const r of records || []) {
+    if (r.estado === "eliminada" || String(r.date).slice(0, 4) !== anio) continue;
+    sumar(
+      claveFactor({ ...r, sistema: sistemaDe(porNombre[r.sucursal]) }),
+      r.type === "electricidad" ? 2 : r.type === "agua" ? 3 : r.alcance || 1,
+    );
+    if (wtt && r.type === "combustible") sumar(claveFactor({ ...r, type: "wtt" }), 3);
   }
   return [...out.values()].sort((a, b) => a.alcance - b.alcance || a.clave.localeCompare(b.clave));
+}
+
+function InterruptorWtt({ activo }) {
+  const { correr, pending } = useAccion();
+  return (
+    <div className="emis-info-banner" style={{ marginBottom: 18, alignItems: "center" }}>
+      <Icon name="local_gas_station" size={16} />
+      <span className="prt-grow">
+        <strong>Upstream de combustibles (WTT)</strong> · alcance 3, categoría 3. Si está incluido, cada
+        registro de combustible suma su emisión de extracción y transporte, sin cargar nada aparte.
+      </span>
+      <Btn
+        size="sm"
+        kind={activo ? "ghost" : "primary"}
+        disabled={pending}
+        onClick={() =>
+          correr(() => setWttAction(!activo), {
+            exito: { title: activo ? "WTT excluido" : "WTT incluido", body: "Se recalcula la huella de todos los años." },
+          })
+        }
+      >
+        {activo ? "Excluir" : "Incluir"}
+      </Btn>
+    </div>
+  );
 }
 
 export function Factores({ emissions: inicial, sucursales, records, anioActual, mesActual }) {
@@ -243,7 +273,7 @@ export function Factores({ emissions: inicial, sucursales, records, anioActual, 
     .reverse();
   const [anio, setAnio] = useState(anios[0]);
   const [sucId, setSucId] = useState(sucursales[0]?.id || null);
-  const claves = clavesDelAnio(records, sucursales, anio);
+  const claves = clavesDelAnio(records, sucursales, anio, inicial.wtt);
 
   const guardar = (siguiente, exito) => {
     setEmissions(siguiente);
@@ -292,6 +322,8 @@ export function Factores({ emissions: inicial, sucursales, records, anioActual, 
           </Link>
         }
       />
+
+      <InterruptorWtt activo={inicial.wtt} />
 
       <div className="emis-scope-switch" style={{ marginBottom: 18 }}>
         {anios.map((a) => (

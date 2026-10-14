@@ -50,6 +50,24 @@ test("el bus de acercamiento emite en alcance 3, categoría 7, con factor de com
   assert.equal(r.tco2e.toFixed(3), "2.740");
 });
 
+test("WTT encendido: cada combustible suma su upstream en alcance 3, categoría 3", () => {
+  const ctx = (wtt) => ({
+    records: [
+      { id: "c1", type: "combustible", subcat: "diesel", unit: "L", cantidad: 1000, date: "2024-03-15", sucursal: "CD", estado: "activa", clase: "móvil", alcance: 1 },
+      { id: "c2", type: "combustible", subcat: "glp", unit: "t", cantidad: 1, date: "2024-03-15", sucursal: "CD", estado: "activa", clase: "móvil", alcance: 1 },
+    ],
+    sucursales: [{ id: "s1", nombre: "CD" }],
+    emissions: { factoresPorAnio: {}, wtt },
+  });
+  assert.equal(emisionesPorRegistro(ctx(false)).length, 2);
+
+  const filas = emisionesPorRegistro(ctx(true));
+  const wtt = filas.filter((f) => f.type === "wtt");
+  assert.deepEqual(wtt.map((f) => [f.derivadaDe, f.scope, f.categoriaGhg]), [["c1", 3, 3], ["c2", 3, 3]]);
+  assert.equal(wtt[0].tco2e.toFixed(5), "0.62409");
+  assert.equal(wtt[1].factorInfo.fuente, "DEFRA 2025, WTT- fuels");
+});
+
 test("sin factor en esa unidad no inventa uno", () => {
   const gal = claveFactor({ type: "combustible", subcat: "diesel", clase: "fija", unit: "gal" });
   assert.equal(resolverFactor(gal, "2024"), null);

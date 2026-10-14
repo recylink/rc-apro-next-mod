@@ -94,8 +94,8 @@ _Avoid_: factor de conversión
 
 _Ya no existe el **Factor de sucursal**_ (override por sucursal): el valor propio por año lo reemplaza. Si una sucursal necesita un factor distinto (generación propia), es un sistema eléctrico o una fuente de emisión distinta, no un override.
 
-**Emisión derivada** _(nuevo)_:
-Emisión que no se captura y se calcula desde otro dato: hoy, el upstream de los combustibles (WTT), alcance 3, categoría 3, sobre todo Registro de combustible. Se activa por empresa.
+**Emisión derivada**:
+Emisión que no se captura y se calcula desde otro dato: hoy, el upstream de los combustibles (WTT), alcance 3, categoría 3, sobre todo Registro de combustible. Se activa por empresa (clave `wtt` de "Config", interruptor en Factores).
 _Avoid_: bienes y servicios (para WTT)
 
 **Alcance**:
