@@ -1,17 +1,18 @@
 import { AvisoDatos } from "@/components/ui/avisos";
 import { Impacto } from "@/components/views/impacto";
-import { loadEmbarques, loadEmissions, loadRecords, loadSucursales } from "@/lib/data";
+import { loadEmbarques, loadEmissions, loadRecords, loadResiduos, loadSucursales } from "@/lib/data";
 import { mergeEmissions } from "@/lib/domain/emisiones";
 import { currentMonthKey } from "@/lib/domain/periods";
 
 export const metadata = { title: "Huella de emisiones GEI" };
 
 export default async function ImpactoPage() {
-  const [records, sucursales, emissions, embarques] = await Promise.all([
+  const [records, sucursales, emissions, embarques, residuos] = await Promise.all([
     loadRecords(),
     loadSucursales(),
     loadEmissions(),
     loadEmbarques(),
+    loadResiduos(),
   ]);
 
   return (
@@ -20,6 +21,7 @@ export default async function ImpactoPage() {
       <Impacto
         records={records.data}
         embarques={embarques.data}
+        residuos={residuos.data}
         sucursales={sucursales.data}
         // La planilla guarda solo los valores numéricos; label, unidad, alcance y
         // fuente de cada factor vienen del catálogo. mergeEmissions los combina y,

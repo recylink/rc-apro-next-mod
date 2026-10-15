@@ -217,7 +217,7 @@ export function InformeHuella({ informe: inf, anios }) {
 
         <div className="prt-hint informe-bloque" style={{ fontSize: 11 }}>
           Metodología: GHG Protocol Corporate Standard y NCh-ISO 14064-1:2019 según la homologación de HuellaChile.
-          Emisiones = dato de actividad × factor de emisión. Residuos se gestionan fuera de esta herramienta.
+          Emisiones = dato de actividad × factor de emisión. Residuos: control de peso de las operaciones de Recylink.
         </div>
       </div>
     </div>

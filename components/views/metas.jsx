@@ -188,13 +188,13 @@ function MetaEditor({ meta, onPatch, anualActual, baseAutomatica, aniosBase }) {
   );
 }
 
-export function Metas({ emissions: inicial, records, embarques, sucursales, mesActual, anioActual }) {
+export function Metas({ emissions: inicial, records, embarques, residuos, sucursales, mesActual, anioActual }) {
   const router = useRouter();
   const { guardarEmisiones, pending } = useGuardarEmisiones(inicial);
   const [emissions, setEmissions] = useState(inicial);
   const [sucios, setSucios] = useState(false);
 
-  const ctx = { records, embarques, sucursales, emissions, anchor: mesActual };
+  const ctx = { records, embarques, residuos, sucursales, emissions, anchor: mesActual };
   // Referencia visual: emisiones de los últimos 12 meses, no base de cálculo.
   const anual = agregadoEmisiones(ctx).total;
   const porSucursal = emisionesPorSucursal(ctx, "all");

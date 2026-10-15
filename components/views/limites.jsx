@@ -119,21 +119,22 @@ function FilaCategoria({ anio, cat, guardado, tco2e }) {
   );
 }
 
-export function Limites({ records, embarques, sucursales, emissions, inventario, mesActual }) {
-  const anios = [...new Set([mesActual.slice(0, 4), ...[...records, ...embarques].map((r) => String(r.date).slice(0, 4))])]
+export function Limites({ records, embarques, residuos, sucursales, emissions, inventario, mesActual }) {
+  const conFecha = [...records, ...embarques, ...residuos];
+  const anios = [...new Set([mesActual.slice(0, 4), ...conFecha.map((r) => String(r.date).slice(0, 4))])]
     .filter((a) => /^\d{4}$/.test(a))
     .sort()
     .reverse();
-  const [anio, setAnio] = useState(() => anios.find((a) => [...records, ...embarques].some((r) => String(r.date).startsWith(a))) || anios[0]);
+  const [anio, setAnio] = useState(() => anios.find((a) => conFecha.some((r) => String(r.date).startsWith(a))) || anios[0]);
   const { correr, pending } = useAccion();
 
   const porCategoria = useMemo(
     () =>
       emisionesPorCategoria(
-        { records, embarques, sucursales, emissions, anchor: mesActual },
+        { records, embarques, residuos, sucursales, emissions, anchor: mesActual },
         { sucursal: "all", period: `custom:${anio}-01:${anio}-12` },
       ),
-    [records, embarques, sucursales, emissions, mesActual, anio],
+    [records, embarques, residuos, sucursales, emissions, mesActual, anio],
   );
   const lim = inventario.limites[anio] || { enfoque: "", categorias: {} };
 

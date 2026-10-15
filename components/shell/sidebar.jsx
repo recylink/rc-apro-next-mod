@@ -17,6 +17,7 @@ const ITEMS = [
   { href: "/impacto", label: "Impacto", icon: "eco", match: (p) => p.startsWith("/impacto") },
   { href: "/registrar", label: "Registrar", icon: "edit", match: (p) => p.startsWith("/registrar") },
   { href: "/logistica", label: "Logística", icon: "apartment", match: (p) => p.startsWith("/logistica") },
+  { href: "/residuos", label: "Residuos", icon: "delete", match: (p) => p.startsWith("/residuos") },
   { href: "/medidores", label: "Medidores", icon: "speed", match: (p) => p.startsWith("/medidores") },
   { href: "/configuracion", label: "Configuración", icon: "settings", match: (p) => p.startsWith("/configuracion") },
 ];

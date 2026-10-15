@@ -32,7 +32,7 @@ al upstream. La referencia y sus cinco espejos no se tocan.
 | 1 | Refrigerantes | Siguen dentro de consumos (Recarga) | Módulo aparte: mismo grano sucursal × mes, mismo usuario. Techo: inventario por equipo |
 | 2 | Flota | Sin módulo. Combustible gana **Fuente de emisión** (catálogo con clase y alcance) y **Equipo** opcional; filtrable | "Diésel móvil" como subcategoría: combinatoria combustible × clase |
 | 3 | Bus de personal | Una Fuente de emisión más ("Bus 45 personas"), alcance 3 cat. 7 | Módulo de movilidad: solo hace falta con encuestas de commuting o viajes |
-| 4 | Residuos | Fuera de la app; existen en Recylink | Capturarlos aquí: dos fuentes de verdad |
+| 4 | Residuos | **Temporal** (2026-10-15): se importa el export "Detalle Trazabilidad" de Recylink a la hoja Residuos; factor por residuo + tratamiento (HuellaChile 3.6). Alcance 3 cat. 5. Se reemplaza por una API al software de Recylink | Fuera de la app (la idea original): el cliente necesita la huella de sus residuos ya. Captura manual: dos fuentes de verdad |
 | 5 | Logística | Por **Embarque** con fecha (mes/año mínimo), Documento opcional y **Rutas** precargadas. Alcance 3 cat. 4 | Por año o total anual: rompe vistas mensuales y Metas |
 | 6 | Factores | **Catálogo** HuellaChile + DEFRA en el repo, con fuente; la empresa elige y puede hacer override justificado | Que cada empresa digite: nadie sabe de dónde sale el número |
 | 7 | Historia | Factor elegido **por año de inventario**; recalcular un año pasado es explícito | Recalcular siempre: cambia una huella ya reportada. Snapshot al cierre: techo si hay verificación externa |
@@ -83,6 +83,7 @@ Los siete pasos están en `main`, con pruebas (`npm test`):
 | 5 | Embarques y Rutas (alcance 3, cat. 4) | hojas `Embarques` y `Rutas`; pantalla Logística |
 | 6 | Organización, datos de sucursal y límites por año | `Config.organizacion/datosSucursal/limites`; Impacto → Límites |
 | 7 | Informe anual: pantalla, impresión y Excel | `lib/domain/informe.js`; `/impacto/informe` |
+| 8 | Residuos (temporal) | hoja `Residuos`; `lib/domain/residuos.js`; pantalla Residuos (importar .xlsx) |
 
 Lo que se apartó del diseño, y por qué:
 

@@ -20,7 +20,7 @@ import { setFactorAnioAction, setWttAction } from "@/app/actions/config";
 import { fmtTon } from "@/lib/domain/format";
 import { REFRIGERANTES_CATALOG, SCOPES } from "@/lib/domain/emisiones";
 import { CAT_META, sistemaDe } from "@/lib/domain/emisiones-calc";
-import { candidatos, claveFactor, describirClave, resolverFactor } from "@/lib/domain/factores";
+import { candidatos, claveFactor, describirClave, opcionesFactor, resolverFactor } from "@/lib/domain/factores";
 import { nextRefrigId } from "@/lib/domain/ids";
 import { getSubcatsFor } from "@/lib/domain/sucursales";
 
@@ -36,7 +36,8 @@ function FilaFactorAnio({ clave, anio, n, alcance, factoresPorAnio }) {
   const { correr, pending } = useAccion();
   const [propio, setPropio] = useState(null); // { valor, justificacion } mientras se edita
   const f = resolverFactor(clave, anio, factoresPorAnio);
-  const opciones = candidatos(clave, anio);
+  const opciones = opcionesFactor(clave, anio);
+  const porDefecto = candidatos(clave, anio)[0];
 
   const guardar = (eleccion, title) =>
     correr(() => setFactorAnioAction(anio, clave, eleccion), {
@@ -46,7 +47,7 @@ function FilaFactorAnio({ clave, anio, n, alcance, factoresPorAnio }) {
 
   const elegir = (id) =>
     // Elegir el default del catálogo es lo mismo que no elegir: se borra la elección.
-    guardar(id === opciones[0]?.id ? null : { id }, "Factor actualizado");
+    guardar(id === porDefecto?.id ? null : { id }, "Factor actualizado");
 
   return (
     <div className="emis-factor-row" style={{ flexWrap: "wrap", rowGap: 10 }}>
@@ -76,7 +77,7 @@ function FilaFactorAnio({ clave, anio, n, alcance, factoresPorAnio }) {
       </div>
 
       <div className="prt-row" style={{ gap: 8, width: "100%" }}>
-        {opciones.length > 1 && (
+        {(opciones.length > 1 || (!f && opciones.length > 0)) && (
           <Select
             style={{ flex: 1, minWidth: 0 }}
             value={f?.origen === "propio" ? "" : f?.id || ""}
@@ -220,7 +221,7 @@ function FilaRefrigerante({ rf, onCambiar, onQuitar }) {
 }
 
 /** Claves de factor usadas por los registros de un año, con su alcance y cuántos registros. */
-function clavesDelAnio(records, sucursales, anio, wtt, embarques, fuentes, rutas) {
+function clavesDelAnio(records, sucursales, anio, wtt, embarques, fuentes, rutas, residuos) {
   const porNombre = Object.fromEntries((sucursales || []).map((s) => [s.nombre, s]));
   const out = new Map();
   const sumar = (clave, alcance) => {
@@ -238,6 +239,9 @@ function clavesDelAnio(records, sucursales, anio, wtt, embarques, fuentes, rutas
   }
   for (const e of embarques || []) {
     if (String(e.date).slice(0, 4) === anio) sumar(claveFactor({ ...e, type: "embarque" }), 3);
+  }
+  for (const r of residuos || []) {
+    if (String(r.date).slice(0, 4) === anio) sumar(claveFactor({ ...r, type: "residuo" }), 3);
   }
   // Previstos: lo que la configuración dice que se va a registrar, aunque todavía no
   // haya consumos. Así los factores se revisan antes de cargar el año.
@@ -299,17 +303,18 @@ function InterruptorWtt({ activo }) {
   );
 }
 
-export function Factores({ emissions: inicial, sucursales, records, embarques, fuentes, rutas, anioActual, mesActual }) {
+export function Factores({ emissions: inicial, sucursales, records, embarques, residuos, fuentes, rutas, anioActual, mesActual }) {
+  const conFecha = [...(records || []), ...(embarques || []), ...(residuos || [])];
   const { guardarEmisiones, pending } = useGuardarEmisiones(inicial);
   const [emissions, setEmissions] = useState(inicial);
 
-  const anios = [...new Set([anioActual, ...[...(records || []), ...(embarques || [])].map((r) => String(r.date).slice(0, 4))])]
+  const anios = [...new Set([anioActual, ...conFecha.map((r) => String(r.date).slice(0, 4))])]
     .filter((a) => /^\d{4}$/.test(a))
     .sort()
     .reverse();
-  const [anio, setAnio] = useState(() => anios.find((a) => [...(records || []), ...(embarques || [])].some((r) => String(r.date).startsWith(a))) || anios[0]);
+  const [anio, setAnio] = useState(() => anios.find((a) => conFecha.some((r) => String(r.date).startsWith(a))) || anios[0]);
   const [sucId, setSucId] = useState(sucursales[0]?.id || null);
-  const claves = clavesDelAnio(records, sucursales, anio, inicial.wtt, embarques, fuentes, rutas);
+  const claves = clavesDelAnio(records, sucursales, anio, inicial.wtt, embarques, fuentes, rutas, residuos);
 
   const guardar = (siguiente, exito) => {
     setEmissions(siguiente);
