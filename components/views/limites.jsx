@@ -124,7 +124,7 @@ export function Limites({ records, embarques, sucursales, emissions, inventario,
     .filter((a) => /^\d{4}$/.test(a))
     .sort()
     .reverse();
-  const [anio, setAnio] = useState(anios[0]);
+  const [anio, setAnio] = useState(() => anios.find((a) => [...records, ...embarques].some((r) => String(r.date).startsWith(a))) || anios[0]);
   const { correr, pending } = useAccion();
 
   const porCategoria = useMemo(

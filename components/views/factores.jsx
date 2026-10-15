@@ -307,7 +307,7 @@ export function Factores({ emissions: inicial, sucursales, records, embarques, f
     .filter((a) => /^\d{4}$/.test(a))
     .sort()
     .reverse();
-  const [anio, setAnio] = useState(anios[0]);
+  const [anio, setAnio] = useState(() => anios.find((a) => [...(records || []), ...(embarques || [])].some((r) => String(r.date).startsWith(a))) || anios[0]);
   const [sucId, setSucId] = useState(sucursales[0]?.id || null);
   const claves = clavesDelAnio(records, sucursales, anio, inicial.wtt, embarques, fuentes, rutas);
 

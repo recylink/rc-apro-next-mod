@@ -126,7 +126,7 @@ export function Logistica({ embarques, rutas, sucursales, emissions, mesActual }
     .filter((a) => /^\d{4}$/.test(a))
     .sort()
     .reverse();
-  const [anio, setAnio] = useState(anios[0]);
+  const [anio, setAnio] = useState(() => anios.find((a) => embarques.some((e) => String(e.date).startsWith(a))) || anios[0]);
 
   const filas = useMemo(
     () =>
