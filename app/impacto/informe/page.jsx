@@ -6,12 +6,12 @@ export const metadata = { title: "Informe de huella" };
 
 export default async function InformePage({ searchParams }) {
   const { anio } = await searchParams;
-  const { informe, anios, configured, error } = await cargarInforme(anio);
+  const { informe, comparacion, anios, configured, error } = await cargarInforme(anio);
 
   return (
     <div>
       <AvisoDatos configured={configured} error={error} />
-      <InformeHuella informe={informe} anios={anios} />
+      <InformeHuella informe={informe} comparacion={comparacion} anios={anios} comparando={anio === "comparar"} />
     </div>
   );
 }

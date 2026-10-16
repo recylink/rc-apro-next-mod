@@ -6,5 +6,8 @@ import { informeWorkbook } from "@/lib/reportes/informe-excel";
 
 /** Informe de huella del año en Excel. Se rearma en el servidor desde la planilla. */
 export async function exportInformeExcelAction(anio) {
-  return run(async () => informeWorkbook((await cargarInforme(anio)).informe));
+  return run(async () => {
+    const { informe, comparacion } = await cargarInforme(anio);
+    return informeWorkbook(informe, comparacion);
+  });
 }

@@ -48,33 +48,115 @@ function Botones({ anio }) {
   );
 }
 
-export function InformeHuella({ informe: inf, anios }) {
+/** Variación vs el año anterior: verde si baja, rojo si sube. */
+function Variacion({ v }) {
+  if (v == null) return null;
+  const color = Math.abs(v) < 0.05 ? "var(--rl-gray-500)" : v < 0 ? "var(--rl-success-700)" : "var(--rl-error-700)";
+  return <div style={{ fontSize: 11, color }}>{v > 0 ? "+" : ""}{p1(v)}</div>;
+}
+
+function Comparacion({ comparacion: comp }) {
+  const estilo = {
+    total: { fontWeight: 700, background: "var(--rl-gray-50)" },
+    alcance: { fontWeight: 700 },
+    categoria: { paddingLeft: 28 },
+    intensidad: { fontStyle: "italic" },
+  };
+  return (
+    <Card flush className="informe-bloque">
+      <div className="prt-card-head">
+        <div>
+          <div className="prt-h3">Comparación entre años</div>
+          <div className="prt-hint">tCO₂e por año, con la variación respecto del año anterior · cada año con sus propios límites</div>
+        </div>
+      </div>
+      <div style={{ overflowX: "auto" }}>
+        <table className="prt-table">
+          <thead>
+            <tr>
+              <th />
+              {comp.anios.map((a) => (
+                <th key={a} style={{ textAlign: "right" }}>{a}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {comp.filas.map((f) => (
+              <tr key={f.etiqueta} style={f.nivel === "total" ? estilo.total : undefined}>
+                <td style={estilo[f.nivel]}>{f.etiqueta}</td>
+                {f.valores.map((v, i) => (
+                  <td key={comp.anios[i]} style={{ textAlign: "right", fontWeight: estilo[f.nivel]?.fontWeight }}>
+                    {v == null ? "—" : t(v, f.decimales)}
+                    <Variacion v={f.variacion[i]} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+export function InformeHuella({ informe: inf, comparacion, anios, comparando }) {
   const router = useRouter();
   const org = inf.organizacion;
   const enfoque = ENFOQUES.find((e) => e.value === inf.enfoque)?.label || "Sin definir";
   const conEmisionesOEstado = inf.categorias.filter((c) => c.tco2e > 0 || c.estadoDeclarado);
   const sinDefinir = inf.categorias.filter((c) => !c.estadoDeclarado && c.tco2e > 0).length;
+  const comp = comparacion?.anios.length > 1 ? comparacion : null;
+  const sub = [org.razonSocial, org.rut].filter(Boolean).join(" · ") || "Completa razón social y RUT en Límites";
+
+  const pestanas = (
+    <div className="emis-scope-switch no-print" style={{ marginBottom: 18 }}>
+      {anios.map((a) => (
+        <button
+          key={a}
+          className={"emis-scope-tab" + (!comparando && a === inf.anio ? " active" : "")}
+          onClick={() => router.push(`/impacto/informe?anio=${a}`)}
+        >
+          <Icon name="calendar_today" size={16} /> {a}
+        </button>
+      ))}
+      {comp && (
+        <button
+          className={"emis-scope-tab" + (comparando ? " active" : "")}
+          onClick={() => router.push("/impacto/informe?anio=comparar")}
+        >
+          <Icon name="trending_up" size={16} /> Comparar años
+        </button>
+      )}
+    </div>
+  );
+
+  if (comparando && comp) {
+    return (
+      <div>
+        <SectionHead
+          eyebrow="Impacto Ambiental"
+          title={`Huella de carbono ${comp.anios[0]}–${comp.anios.at(-1)}`}
+          sub={sub}
+          right={<Botones anio={inf.anio} />}
+        />
+        {pestanas}
+        <div className="prt-stack-md informe-hoja">
+          <Comparacion comparacion={comp} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <SectionHead
         eyebrow="Impacto Ambiental"
         title={`Informe de huella de carbono ${inf.anio}`}
-        sub={[org.razonSocial, org.rut].filter(Boolean).join(" · ") || "Completa razón social y RUT en Límites"}
+        sub={sub}
         right={<Botones anio={inf.anio} />}
       />
 
-      <div className="emis-scope-switch no-print" style={{ marginBottom: 18 }}>
-        {anios.map((a) => (
-          <button
-            key={a}
-            className={"emis-scope-tab" + (a === inf.anio ? " active" : "")}
-            onClick={() => router.push(`/impacto/informe?anio=${a}`)}
-          >
-            <Icon name="calendar_today" size={16} /> {a}
-          </button>
-        ))}
-      </div>
+      {pestanas}
 
       {(inf.sinFactor > 0 || sinDefinir > 0 || inf.excluidasConEmisiones.length > 0 || !inf.enfoque) && (
         <div className="emis-alert pending no-print" style={{ marginBottom: 18 }}>

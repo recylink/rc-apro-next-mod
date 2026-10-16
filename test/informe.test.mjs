@@ -49,3 +49,15 @@ test("el Excel trae las cuatro hojas con las mismas cifras", async (t) => {
   assert.equal(resumen.find((r) => r[0] === "Total")[1], 5.48);
   assert.match(filename, /^Huella_APRO-prueba_2024\.xlsx$/);
 });
+
+test("la comparación pone los años lado a lado, con variación y exclusiones por año", async () => {
+  const { comparacionAnual } = await import("../lib/domain/informe.js");
+  const inventario = { limites: { 2024: { categorias: { "3.7": { estado: "excluida" } } } } };
+  const comp = comparacionAnual(ctx, inventario, ["2025", "2024", "2023"]);
+  assert.deepEqual(comp.anios, ["2023", "2024"]); // 2025 sin huella queda fuera
+  const total = comp.filas.find((f) => f.nivel === "total");
+  assert.deepEqual(total.valores.map((v) => v.toFixed(2)), ["2.74", "2.74"]);
+  assert.deepEqual(total.variacion, [null, 0]);
+  const bus = comp.filas.find((f) => f.etiqueta.startsWith("7."));
+  assert.equal(bus, undefined); // solo emitió en 2024, y ese año está excluida
+});
